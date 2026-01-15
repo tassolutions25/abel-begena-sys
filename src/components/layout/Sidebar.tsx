@@ -13,9 +13,9 @@ import {
 } from "lucide-react";
 
 const menuItems = [
-  { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-  { name: "Register Student", icon: Users, href: "/dashboard/students/new" }, // New Link
-  { name: "Add Branch", icon: School, href: "/dashboard/branches/new" }, // New Link
+  { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" }, // Shows Analytics
+  { name: "Students", icon: Users, href: "/dashboard/students" }, // Shows List
+  { name: "Branches", icon: School, href: "/dashboard/branches" }, // Shows List
   { name: "Attendance", icon: CalendarCheck, href: "/dashboard/attendance" },
   { name: "Payments", icon: Banknote, href: "/dashboard/payments" },
 ];

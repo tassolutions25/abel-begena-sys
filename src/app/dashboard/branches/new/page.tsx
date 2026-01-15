@@ -47,9 +47,7 @@ export default function NewBranchPage() {
               <CardTitle className="text-white text-xl">
                 Register New Branch
               </CardTitle>
-              <CardDescription>
-                Add a new location for Abel Begena School.
-              </CardDescription>
+              <CardDescription>Add a new location.</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -62,46 +60,43 @@ export default function NewBranchPage() {
               <Input
                 id="name"
                 name="name"
-                placeholder="e.g. Bole Medhanialem Branch"
-                className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-600 focus-visible:ring-primary"
+                placeholder="e.g. Bole Branch"
+                className="bg-slate-900 border-slate-700 text-white"
                 required
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="location" className="text-slate-300">
-                Location / Address
+                Location
               </Label>
               <Input
                 id="location"
                 name="location"
-                placeholder="e.g. Addis Ababa, Bole Road"
-                className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-600 focus-visible:ring-primary"
+                placeholder="e.g. Bole Road"
+                className="bg-slate-900 border-slate-700 text-white"
                 required
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="currency" className="text-slate-300">
-                Operating Currency
+                Currency
               </Label>
               <Select name="currency" required defaultValue="ETB">
-                <SelectTrigger className="bg-slate-900 border-slate-700 text-white focus:ring-primary">
+                <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
                   <SelectValue placeholder="Select Currency" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                  <SelectItem value="ETB">ETB (Ethiopian Birr)</SelectItem>
-                  <SelectItem value="USD">USD (US Dollar)</SelectItem>
+                  <SelectItem value="ETB">ETB</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
             <Button
               type="submit"
-              className="w-full bg-primary text-black hover:bg-amber-600 font-bold"
+              className="w-full bg-primary text-black font-bold"
               disabled={isPending}
             >
-              {isPending ? "Creating Branch..." : "Create Branch"}
+              {isPending ? "Creating..." : "Create Branch"}
             </Button>
           </form>
         </CardContent>

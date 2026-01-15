@@ -1,9 +1,9 @@
 import prisma from "@/lib/prisma";
-import NewStudentForm from "@/components/forms/NewStudentForm"; // We will create this next
+import NewStudentForm from "@/components/forms/NewStudentForm"; // We assume this exists from previous steps
 import { UserPlus } from "lucide-react";
 
 export default async function NewStudentPage() {
-  // 1. Fetch real branches from DB
+  // Fetch branches to show in dropdown
   const branches = await prisma.branch.findMany({
     select: { id: true, name: true },
   });
@@ -24,8 +24,6 @@ export default async function NewStudentPage() {
             </p>
           </div>
         </div>
-
-        {/* Pass the branches to the form */}
         <NewStudentForm branches={branches} />
       </div>
     </div>
