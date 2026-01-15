@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Define the User Roles
+enum UserRole {
+  SUPER_ADMIN // Can do everything + pay teachers
+  ADMIN       // Can register users + take attendance
+  TEACHER     // Can view own shifts + get paid
+  STUDENT     // Can pay + attend
+}
+
+// 2. Define the Branches (Addis, Chicago, etc.)
+model Branch {
+  id        String   @id @default(uuid())
+  name      String   // e.g., "Bole Branch", "Chicago Main"
+  location  String
+  currency  String   @default("ETB") // ETB or USD
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  users     User[]
+}
+
+// 3. The Main User Model
+model User {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String   @unique
+  password  String   // Hashed
+  phone     String?
+  role      UserRole @default(STUDENT)
+  isActive  Boolean  @default(true)
+  
+  // Relations
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+  
+  // Specific profiles can be linked here later (StudentProfile, TeacherProfile)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
