@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Edit } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -79,7 +80,20 @@ export default async function StudentsPage() {
                   </span>
                 </TableCell>
                 <TableCell className="text-right">
-                  <DeleteButton id={student.id} deleteAction={deleteUser} />
+                  <div className="flex items-center justify-end gap-2">
+                    {/* EDIT BUTTON */}
+                    <Link href={`/dashboard/students/${student.id}/edit`}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-800"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    {/* DELETE BUTTON */}
+                    <DeleteButton id={student.id} deleteAction={deleteUser} />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

@@ -5,6 +5,7 @@ import DeleteButton from "@/components/ui/delete-button";
 import { Button } from "@/components/ui/button";
 import { Plus, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Edit } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,20 @@ export default async function BranchesPage() {
                   {branch.location}
                 </div>
               </div>
-              <DeleteButton id={branch.id} deleteAction={deleteBranch} />
+              <div className="flex gap-2">
+                {/* EDIT BUTTON */}
+                <Link href={`/dashboard/branches/${branch.id}/edit`}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </Link>
+                {/* DELETE BUTTON */}
+                <DeleteButton id={branch.id} deleteAction={deleteBranch} />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="mt-2 flex items-center justify-between text-sm">
