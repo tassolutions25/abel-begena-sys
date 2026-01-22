@@ -12,7 +12,9 @@ import {
   CalendarCheck,
   LogOut,
   Clock,
+  ShieldCheck,
 } from "lucide-react";
+import { logoutAction } from "@/actions/auth-actions";
 
 const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" }, // Shows Analytics
@@ -23,6 +25,7 @@ const menuItems = [
   { name: "Teacher Shifts", icon: Clock, href: "/dashboard/teachers/shifts" },
   { name: "Attendance", icon: CalendarCheck, href: "/dashboard/attendance" },
   { name: "Payments", icon: Banknote, href: "/dashboard/payments" },
+  { name: "Admins", icon: ShieldCheck, href: "/dashboard/admins" },
 ];
 
 export function Sidebar() {
@@ -74,10 +77,12 @@ export function Sidebar() {
 
       {/* 3. Footer / Logout */}
       <div className="border-t border-slate-800 p-4">
-        <button className="flex w-full items-center justify-center rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm font-medium text-slate-300 hover:bg-red-900/20 hover:text-red-500 hover:border-red-900 transition-colors">
-          <LogOut className="mr-2 h-4 w-4" />
-          Sign Out
-        </button>
+        <form action={logoutAction}>
+          <button className="flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-red-400 hover:bg-red-950/30 transition-colors">
+            <LogOut className="mr-3 h-5 w-5" />
+            Sign Out
+          </button>
+        </form>
       </div>
     </div>
   );

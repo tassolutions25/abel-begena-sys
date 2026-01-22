@@ -318,3 +318,14 @@ function getDistanceFromLatLonInMeters(
 function deg2rad(deg: number) {
   return deg * (Math.PI / 180);
 }
+
+export async function resumeShift(formData: FormData) {
+  const attendanceId = formData.get("attendanceId") as string;
+
+  await prisma.teacherAttendance.update({
+    where: { id: attendanceId },
+    data: { checkOut: null }, // Clear the checkout time
+  });
+
+  revalidatePath("/teacher-portal");
+}

@@ -1,9 +1,24 @@
 import { Sidebar } from "@/components/layout/Sidebar";
+import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await getSession();
+
+  // If not logged in, or if logged in as STUDENT/TEACHER, kick them out
+  if (
+    !session ||
+    (session.role !== "ADMIN" && session.role !== "SUPER_ADMIN")
+  ) {
+    redirect("/login");
+  }
+
   return (
-    // Changed bg-slate-50 to bg-black (or bg-background)
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-black">
       <Sidebar />
       <main className="flex-1 overflow-y-auto p-8 text-foreground">
         {children}

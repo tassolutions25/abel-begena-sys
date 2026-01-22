@@ -29,7 +29,13 @@ const branches = [
   { id: "chicago-main", name: "Chicago - Main" },
 ];
 
-export default function RegisterUserForm() {
+export default function RegisterUserForm({
+  forcedRole,
+  onSuccess,
+}: {
+  forcedRole?: string;
+  onSuccess?: () => void;
+}) {
   // NEW: useActionState returns [state, action, isPending]
   const [state, action, isPending] = useActionState(createUser, null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -78,35 +84,41 @@ export default function RegisterUserForm() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select name="role" required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="STUDENT">Student</SelectItem>
-                  <SelectItem value="TEACHER">Teacher</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {forcedRole ? (
+              <input type="hidden" name="role" value={forcedRole} />
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Select name="role" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="STUDENT">Student</SelectItem>
+                    <SelectItem value="TEACHER">Teacher</SelectItem>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="branchId">Branch</Label>
-              <Select name="branchId" required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Branch" />
-                </SelectTrigger>
-                <SelectContent>
-                  {branches.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {!forcedRole && (
+              <div className="space-y-2">
+                <Label htmlFor="branchId">Branch</Label>
+                <Select name="branchId" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <Button
@@ -116,6 +128,8 @@ export default function RegisterUserForm() {
           >
             {isPending ? "Registering..." : "Register User"}
           </Button>
+
+          <Button>Register</Button>
         </form>
       </CardContent>
     </Card>
