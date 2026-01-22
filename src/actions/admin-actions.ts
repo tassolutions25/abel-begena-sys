@@ -11,6 +11,7 @@ const UserSchema = z.object({
   password: z.string().min(6, "Password too short"),
   role: z.enum(["ADMIN", "TEACHER", "STUDENT"]),
   branchId: z.string().min(1, "Branch is required"),
+  phone: z.string().optional(),
 });
 
 export async function createUser(prevState: any, formData: FormData) {
@@ -25,7 +26,8 @@ export async function createUser(prevState: any, formData: FormData) {
       };
     }
 
-    const { fullName, email, password, role, branchId } = validatedFields.data;
+    const { fullName, email, password, role, branchId, phone } =
+      validatedFields.data;
 
     // 1. Check if Branch exists, if not, CREATE IT (Auto-fix for setup)
     const existingBranch = await prisma.branch.findUnique({
@@ -57,6 +59,7 @@ export async function createUser(prevState: any, formData: FormData) {
         fullName,
         email,
         password: hashedPassword,
+        phone: phone || null,
         role: role as any,
         branchId,
       },

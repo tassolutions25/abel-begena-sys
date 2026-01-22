@@ -11,6 +11,7 @@ import {
   Banknote,
   CalendarCheck,
   LogOut,
+  Clock,
 } from "lucide-react";
 
 const menuItems = [
@@ -18,6 +19,8 @@ const menuItems = [
   { name: "Students", icon: Users, href: "/dashboard/students" }, // Shows List
   { name: "Branches", icon: School, href: "/dashboard/branches" }, // Shows List
   { name: "Academics", icon: BookOpen, href: "/dashboard/academics" },
+  { name: "Teachers", icon: Users, href: "/dashboard/teachers" },
+  { name: "Teacher Shifts", icon: Clock, href: "/dashboard/teachers/shifts" },
   { name: "Attendance", icon: CalendarCheck, href: "/dashboard/attendance" },
   { name: "Payments", icon: Banknote, href: "/dashboard/payments" },
 ];

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useActionState } from "react";
-import { enrollStudent } from "@/actions/academic-actions";
+import { updateEnrollment } from "@/actions/academic-actions";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BookOpen } from "lucide-react";
+import { Edit } from "lucide-react";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,31 +32,36 @@ const DAYS = [
   { id: "SUNDAY", label: "Sunday" },
 ];
 
-export default function EnrollDialog({
-  studentId,
-  courses,
+export default function EditEnrollmentDialog({
+  enrollment,
   shifts,
 }: {
-  studentId: string;
-  courses: any[];
+  enrollment: any;
   shifts: any[];
 }) {
   const [open, setOpen] = useState(false);
-  const [state, action, isPending] = useActionState(enrollStudent, null);
+  const [state, action, isPending] = useActionState(updateEnrollment, null);
 
-  // State for logic
-  const [program, setProgram] = useState("THREE_MONTHS");
-  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  // Initialize state
+  const [program, setProgram] = useState(enrollment.programType);
+  const [selectedDays, setSelectedDays] = useState<string[]>(
+    enrollment.selectedDays
+  );
 
-  // Calculate required days based on selection
   const requiredDays =
     program === "THREE_MONTHS" ? 5 : program === "SIX_MONTHS" ? 3 : 2;
 
+  // 1. FIX: Sync state when the 'enrollment' prop updates (after a save)
+  useEffect(() => {
+    setProgram(enrollment.programType);
+    setSelectedDays(enrollment.selectedDays);
+  }, [enrollment]);
+
+  // 2. Handle Server Action success
   useEffect(() => {
     if (state?.success) {
       toast.success(state.message);
       setOpen(false);
-      setSelectedDays([]); // Reset
     } else if (state?.message) {
       toast.error(state.message);
     }
@@ -73,40 +78,22 @@ export default function EnrollDialog({
       <DialogTrigger asChild>
         <Button
           size="sm"
-          variant="secondary"
-          className="bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-600"
+          variant="ghost"
+          className="h-8 w-8 p-0 text-slate-400 hover:text-white border border-slate-700 hover:bg-slate-800"
         >
-          <BookOpen className="h-3 w-3 mr-1" /> Enroll
+          <Edit className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-black border-slate-800 text-white max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-black border-slate-800 text-white max-w-lg">
         <DialogHeader>
-          <DialogTitle>Enroll in Class</DialogTitle>
+          <DialogTitle>Edit Enrollment: {enrollment.course.name}</DialogTitle>
         </DialogHeader>
         <form action={action} className="space-y-4">
-          <input type="hidden" name="studentId" value={studentId} />
+          <input type="hidden" name="enrollmentId" value={enrollment.id} />
 
-          {/* 1. Select Class */}
-          <div className="space-y-2">
-            <Label>Class Instrument</Label>
-            <Select name="courseId" required>
-              <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                <SelectValue placeholder="Select Class" />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                {courses.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 2. Select Shift */}
           <div className="space-y-2">
             <Label>Time Shift</Label>
-            <Select name="shiftId" required>
+            <Select name="shiftId" defaultValue={enrollment.shiftId}>
               <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
                 <SelectValue placeholder="Select Shift" />
               </SelectTrigger>
@@ -120,36 +107,27 @@ export default function EnrollDialog({
             </Select>
           </div>
 
-          {/* 3. Select Program Type */}
           <div className="space-y-2">
             <Label>Program Duration</Label>
             <Select
               name="programType"
               value={program}
               onValueChange={setProgram}
-              required
             >
               <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                <SelectItem value="THREE_MONTHS">
-                  3 Months (5 Days/Week)
-                </SelectItem>
-                <SelectItem value="SIX_MONTHS">
-                  6 Months (3 Days/Week)
-                </SelectItem>
-                <SelectItem value="NINE_MONTHS">
-                  9 Months (2 Days/Week)
-                </SelectItem>
+                <SelectItem value="THREE_MONTHS">3 Months (5 Days)</SelectItem>
+                <SelectItem value="SIX_MONTHS">6 Months (3 Days)</SelectItem>
+                <SelectItem value="NINE_MONTHS">9 Months (2 Days)</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* 4. Select Days */}
           <div className="space-y-3 pt-2 border-t border-slate-800">
             <div className="flex justify-between items-center">
-              <Label>Select Learning Days</Label>
+              <Label>Select Days</Label>
               <span
                 className={`text-xs ${
                   selectedDays.length === requiredDays
@@ -164,7 +142,6 @@ export default function EnrollDialog({
             <div className="grid grid-cols-2 gap-3">
               {DAYS.map((day) => (
                 <div key={day.id} className="flex items-center space-x-2">
-                  {/* Hidden input to allow form submission of arrays */}
                   <input
                     type="checkbox"
                     name="days"
@@ -173,16 +150,15 @@ export default function EnrollDialog({
                     className="hidden"
                     readOnly
                   />
-
                   <Checkbox
-                    id={day.id}
+                    id={`edit-${enrollment.id}-${day.id}`} // Unique ID fix
                     checked={selectedDays.includes(day.id)}
                     onCheckedChange={() => handleDayToggle(day.id)}
-                    className="border-slate-600 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    className="border-slate-600 data-[state=checked]:bg-primary"
                   />
                   <label
-                    htmlFor={day.id}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-slate-300"
+                    htmlFor={`edit-${enrollment.id}-${day.id}`}
+                    className="text-sm cursor-pointer text-slate-300"
                   >
                     {day.label}
                   </label>
@@ -196,7 +172,7 @@ export default function EnrollDialog({
             className="w-full bg-primary text-black font-bold mt-4"
             disabled={isPending || selectedDays.length !== requiredDays}
           >
-            {isPending ? "Enrolling..." : "Confirm Enrollment"}
+            {isPending ? "Updating..." : "Update Enrollment"}
           </Button>
         </form>
       </DialogContent>

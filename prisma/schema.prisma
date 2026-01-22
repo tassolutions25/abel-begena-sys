@@ -29,9 +29,40 @@ model User {
   
   // New Relation: A student can have multiple enrollments (e.g., Begena AND Masinko)
   enrollments Enrollment[]
+
+  teacherShiftId    String?
+  teacherShift      TeacherShift? @relation(fields: [teacherShiftId], references: [id])
+  teacherAttendance TeacherAttendance[] // Track their daily clock-ins
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model TeacherShift {
+  id        String   @id @default(uuid())
+  name      String   
+  startTime String   
+  endTime   String   
+  teachers  User[]
+}
+
+
+model TeacherAttendance {
+  id        String   @id @default(uuid())
+  date      DateTime 
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  status    AttendanceStatus // PRESENT, ABSENT, LATE
+  
+  checkIn   DateTime?        // When they started
+  checkOut  DateTime?        // NEW: When they finished
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // Track manual edits
+
+  @@unique([date, userId])
 }
 
 // 2. Existing Branch Model
@@ -61,7 +92,6 @@ model Shift {
   enrollments Enrollment[]
 }
 
-// 5. NEW: Enrollment (Links Student + Course + Shift)
 model Enrollment {
   id        String   @id @default(uuid())
   
@@ -74,10 +104,30 @@ model Enrollment {
   shiftId   String
   shift     Shift    @relation(fields: [shiftId], references: [id])
   
-  active    Boolean  @default(true)
+  // NEW FIELDS
+  programType  ProgramType @default(THREE_MONTHS)
+  selectedDays DayOfWeek[] // This stores ["MONDAY", "WEDNESDAY", etc.]
   
-  // An enrollment has many attendance records (one per day)
+  active    Boolean  @default(true)
   attendance Attendance[]
+}
+
+// 2. Define the Program Types
+enum ProgramType {
+  THREE_MONTHS // 5 Days
+  SIX_MONTHS   // 3 Days
+  NINE_MONTHS  // 2 Days
+}
+
+// 3. Define Days
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
 }
 
 // 6. NEW: Attendance Record
