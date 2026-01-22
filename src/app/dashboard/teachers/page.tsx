@@ -83,13 +83,13 @@ export default async function TeachersListPage() {
                 key={teacher.id}
                 className="border-slate-800 hover:bg-slate-900/50"
               >
-                <TableCell className="font-medium text-white">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center text-primary font-bold border border-slate-700">
-                      {teacher.fullName.charAt(0)}
-                    </div>
+                <TableCell>
+                  <Link
+                    href={`/dashboard/teachers/${teacher.id}`}
+                    className="hover:text-primary hover:underline font-bold text-white"
+                  >
                     {teacher.fullName}
-                  </div>
+                  </Link>
                 </TableCell>
                 <TableCell className="text-slate-400">
                   {teacher.branch?.name || "Unassigned"}

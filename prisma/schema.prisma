@@ -71,6 +71,11 @@ model Branch {
   name      String
   location  String
   currency  String   @default("ETB")
+  
+  // NEW: Geolocation coordinates
+  latitude  Float?   // e.g. 9.005401
+  longitude Float?   // e.g. 38.763611
+  
   users     User[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

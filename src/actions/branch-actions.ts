@@ -32,3 +32,21 @@ export async function createBranch(prevState: any, formData: FormData) {
     };
   }
 }
+
+export async function updateBranchLocation(prevState: any, formData: FormData) {
+  const id = formData.get("id") as string;
+  // Convert string to float
+  const latitude = parseFloat(formData.get("latitude") as string);
+  const longitude = parseFloat(formData.get("longitude") as string);
+
+  if (isNaN(latitude) || isNaN(longitude))
+    return { message: "Invalid Coordinates", success: false };
+
+  await prisma.branch.update({
+    where: { id },
+    data: { latitude, longitude },
+  });
+
+  revalidatePath("/dashboard/branches");
+  return { message: "Location Updated", success: true };
+}

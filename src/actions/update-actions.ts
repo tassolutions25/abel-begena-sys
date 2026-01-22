@@ -3,14 +3,16 @@
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
-// --- BRANCH UPDATE ---
+// --- BRANCH UPDATE SCHEMA ---
 const BranchSchema = z.object({
   id: z.string(),
   name: z.string().min(2),
   location: z.string().min(2),
   currency: z.enum(["ETB", "USD"]),
+  // z.coerce.number() automatically converts the string input to a number
+  latitude: z.coerce.number().optional(),
+  longitude: z.coerce.number().optional(),
 });
 
 export async function updateBranch(prevState: any, formData: FormData) {
@@ -27,6 +29,13 @@ export async function updateBranch(prevState: any, formData: FormData) {
         name: validated.data.name,
         location: validated.data.location,
         currency: validated.data.currency,
+        // If the user left it empty (NaN), save as null, otherwise save the number
+        latitude: isNaN(validated.data.latitude || NaN)
+          ? null
+          : validated.data.latitude,
+        longitude: isNaN(validated.data.longitude || NaN)
+          ? null
+          : validated.data.longitude,
       },
     });
 

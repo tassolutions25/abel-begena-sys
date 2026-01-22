@@ -94,21 +94,57 @@ export async function updateTeacherShift(prevState: any, formData: FormData) {
 }
 
 // --- 3. TEACHER CLOCK-IN (Attendance) ---
-export async function teacherClockIn(userId: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+export async function teacherClockIn(
+  userId: string,
+  currentLat: number,
+  currentLng: number
+) {
+  const now = new Date();
+  const todayUTC = new Date(
+    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+  );
+
+  //   const today = new Date();
+  //   today.setHours(0, 0, 0, 0);
 
   try {
+    const teacher = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { branch: true },
+    });
+
+    if (!teacher || !teacher.branch)
+      return { message: "Teacher not assigned to a branch.", success: false };
+
+    // 2. CHECK LOCATION (If branch has coordinates set)
+    if (teacher.branch.latitude && teacher.branch.longitude) {
+      const distance = getDistanceFromLatLonInMeters(
+        currentLat,
+        currentLng,
+        teacher.branch.latitude,
+        teacher.branch.longitude
+      );
+
+      // ALLOWED RADIUS: 200 Meters (Adjust as needed)
+      if (distance > 200) {
+        return {
+          message: `You are too far from ${
+            teacher.branch.name
+          }. You are ${Math.round(distance)}m away.`,
+          success: false,
+        };
+      }
+    }
     // Check if record exists
     const existing = await prisma.teacherAttendance.findUnique({
-      where: { date_userId: { date: today, userId } },
+      where: { date_userId: { date: todayUTC, userId } },
     });
 
     if (existing) return { message: "Already clocked in.", success: false };
 
     await prisma.teacherAttendance.create({
       data: {
-        date: today,
+        date: todayUTC, // Save as UTC midnight
         userId,
         status: "PRESENT",
         checkIn: new Date(), // NOW
@@ -123,13 +159,18 @@ export async function teacherClockIn(userId: string) {
 }
 
 export async function teacherClockOut(userId: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const todayUTC = new Date(
+    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+  );
+
+  //   const today = new Date();
+  //   today.setHours(0, 0, 0, 0);
 
   try {
     // Find today's record
     const record = await prisma.teacherAttendance.findUnique({
-      where: { date_userId: { date: today, userId } },
+      where: { date_userId: { date: todayUTC, userId } },
     });
 
     if (!record)
@@ -183,4 +224,97 @@ export async function adminUpdateAttendance(
 
   revalidatePath("/dashboard/teachers/attendance");
   return { message: "Attendance Log Updated", success: true };
+}
+export async function updateTeacher(prevState: any, formData: FormData) {
+  const id = formData.get("id") as string;
+  const fullName = formData.get("fullName") as string;
+  const email = formData.get("email") as string;
+  const phone = formData.get("phone") as string;
+  const branchId = formData.get("branchId") as string;
+  const teacherShiftId = formData.get("teacherShiftId") as string;
+
+  try {
+    await prisma.user.update({
+      where: { id },
+      data: { fullName, email, phone, branchId, teacherShiftId },
+    });
+    revalidatePath("/dashboard/teachers");
+    revalidatePath(`/dashboard/teachers/${id}`);
+    return { message: "Teacher Updated Successfully", success: true };
+  } catch (e) {
+    return { message: "Error updating teacher", success: false };
+  }
+}
+
+// --- 5. ADMIN MANUALLY ADD ATTENDANCE ---
+export async function adminManualAttendance(
+  prevState: any,
+  formData: FormData
+) {
+  const userId = formData.get("userId") as string;
+  const dateStr = formData.get("date") as string;
+  const checkInStr = formData.get("checkIn") as string; // "HH:MM"
+  const checkOutStr = formData.get("checkOut") as string; // "HH:MM"
+
+  try {
+    const date = new Date(dateStr);
+
+    // Construct Date objects for Time
+    const checkIn = new Date(dateStr + "T" + checkInStr);
+
+    let checkOut = null;
+    if (checkOutStr) {
+      checkOut = new Date(dateStr + "T" + checkOutStr);
+    }
+
+    // Check if record exists
+    const existing = await prisma.teacherAttendance.findUnique({
+      where: { date_userId: { date, userId } },
+    });
+
+    if (existing)
+      return {
+        message: "Attendance record already exists for this date.",
+        success: false,
+      };
+
+    await prisma.teacherAttendance.create({
+      data: {
+        date,
+        userId,
+        status: "PRESENT",
+        checkIn,
+        checkOut,
+      },
+    });
+
+    revalidatePath("/dashboard/teachers/attendance");
+    return { message: "Attendance Added Manually", success: true };
+  } catch (e) {
+    return { message: "Error adding attendance", success: false };
+  }
+}
+
+function getDistanceFromLatLonInMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) *
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d * 1000; // Distance in meters
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI / 180);
 }

@@ -26,11 +26,15 @@ export default function BranchEditDialog({ branch }: { branch: any }) {
           <Edit className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-black border border-slate-800 text-white">
+
+      <DialogContent className="bg-black border border-slate-800 text-white max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Branch</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-white">
+            Edit Branch Details
+          </DialogTitle>
         </DialogHeader>
-        {/* Pass the function to close the modal */}
+
+        {/* We pass the branch data and a function to close the modal */}
         <EditBranchForm branch={branch} onSuccess={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
