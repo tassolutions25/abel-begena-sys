@@ -2,10 +2,10 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { deleteBranch } from "@/actions/delete-actions";
 import DeleteButton from "@/components/ui/delete-button";
+import BranchEditDialog from "@/components/dialogs/BranchEditDialog"; // <--- Import Dialog
 import { Button } from "@/components/ui/button";
 import { Plus, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,6 @@ export default async function BranchesPage() {
           </h2>
           <p className="text-slate-400">Manage school locations.</p>
         </div>
-        {/* BUTTON REDIRECTS TO BRANCH FORM */}
         <Link href="/dashboard/branches/new">
           <Button className="bg-primary text-black hover:bg-amber-600 font-bold">
             <Plus className="mr-2 h-4 w-4" /> Add Branch
@@ -49,17 +48,8 @@ export default async function BranchesPage() {
                 </div>
               </div>
               <div className="flex gap-2">
-                {/* EDIT BUTTON */}
-                <Link href={`/dashboard/branches/${branch.id}/edit`}>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </Link>
-                {/* DELETE BUTTON */}
+                {/* REPLACED LINK WITH DIALOG */}
+                <BranchEditDialog branch={branch} />
                 <DeleteButton id={branch.id} deleteAction={deleteBranch} />
               </div>
             </CardHeader>

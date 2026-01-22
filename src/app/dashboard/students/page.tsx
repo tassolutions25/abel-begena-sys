@@ -2,6 +2,7 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { deleteUser } from "@/actions/delete-actions";
 import DeleteButton from "@/components/ui/delete-button";
+import StudentEditDialog from "@/components/dialogs/StudentEditDialog"; // <--- Import Dialog
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import {
@@ -12,16 +13,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit } from "lucide-react";
+import EnrollDialog from "@/components/dialogs/EnrollDialog";
 
 export const dynamic = "force-dynamic";
 
 export default async function StudentsPage() {
+  // 1. Fetch Students
   const students = await prisma.user.findMany({
     where: { role: "STUDENT" },
     orderBy: { createdAt: "desc" },
     include: { branch: true },
   });
+
+  // 2. Fetch Branches (Needed for the Edit Dropdown)
+  const branches = await prisma.branch.findMany({
+    select: { id: true, name: true },
+  });
+
+  const courses = await prisma.course.findMany();
+  const shifts = await prisma.shift.findMany();
 
   return (
     <div className="space-y-6">
@@ -32,7 +42,6 @@ export default async function StudentsPage() {
           </h2>
           <p className="text-slate-400">Manage enrolled students.</p>
         </div>
-        {/* BUTTON REDIRECTS TO REGISTRATION FORM */}
         <Link href="/dashboard/students/new">
           <Button className="bg-primary text-black hover:bg-amber-600 font-bold">
             <Plus className="mr-2 h-4 w-4" /> Add Student
@@ -60,7 +69,12 @@ export default async function StudentsPage() {
                 className="border-slate-800 hover:bg-slate-900/50"
               >
                 <TableCell className="font-medium text-white">
-                  {student.fullName}
+                  <Link
+                    href={`/dashboard/students/${student.id}`}
+                    className="hover:text-primary hover:underline"
+                  >
+                    {student.fullName}
+                  </Link>
                 </TableCell>
                 <TableCell className="text-slate-400">
                   {student.branch?.name || "N/A"}
@@ -81,17 +95,12 @@ export default async function StudentsPage() {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
-                    {/* EDIT BUTTON */}
-                    <Link href={`/dashboard/students/${student.id}/edit`}>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-800"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    {/* DELETE BUTTON */}
+                    <EnrollDialog
+                      studentId={student.id}
+                      courses={courses}
+                      shifts={shifts}
+                    />
+                    <StudentEditDialog student={student} branches={branches} />
                     <DeleteButton id={student.id} deleteAction={deleteUser} />
                   </div>
                 </TableCell>

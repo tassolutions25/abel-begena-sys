@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Users,
   School,
+  BookOpen,
   Banknote,
   CalendarCheck,
   LogOut,
@@ -16,6 +17,7 @@ const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" }, // Shows Analytics
   { name: "Students", icon: Users, href: "/dashboard/students" }, // Shows List
   { name: "Branches", icon: School, href: "/dashboard/branches" }, // Shows List
+  { name: "Academics", icon: BookOpen, href: "/dashboard/academics" },
   { name: "Attendance", icon: CalendarCheck, href: "/dashboard/attendance" },
   { name: "Payments", icon: Banknote, href: "/dashboard/payments" },
 ];

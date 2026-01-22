@@ -15,34 +15,90 @@ enum UserRole {
   STUDENT     // Can pay + attend
 }
 
-// 2. Define the Branches (Addis, Chicago, etc.)
-model Branch {
-  id        String   @id @default(uuid())
-  name      String   // e.g., "Bole Branch", "Chicago Main"
-  location  String
-  currency  String   @default("ETB") // ETB or USD
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  users     User[]
-}
-
-// 3. The Main User Model
 model User {
   id        String   @id @default(uuid())
   fullName  String
   email     String   @unique
-  password  String   // Hashed
+  password  String
   phone     String?
   role      UserRole @default(STUDENT)
   isActive  Boolean  @default(true)
   
-  // Relations
   branchId  String?
   branch    Branch?  @relation(fields: [branchId], references: [id])
   
-  // Specific profiles can be linked here later (StudentProfile, TeacherProfile)
+  // New Relation: A student can have multiple enrollments (e.g., Begena AND Masinko)
+  enrollments Enrollment[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// 2. Existing Branch Model
+model Branch {
+  id        String   @id @default(uuid())
+  name      String
+  location  String
+  currency  String   @default("ETB")
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 3. NEW: Courses (The 4 Categories)
+model Course {
+  id          String   @id @default(uuid())
+  name        String   // "Begena", "Krar", "Washint", "Masinko"
+  enrollments Enrollment[]
+}
+
+// 4. NEW: Shifts (Dynamic Time Slots)
+model Shift {
+  id          String   @id @default(uuid())
+  name        String   // "Afternoon Shift 1"
+  startTime   String   // "16:30"
+  endTime     String   // "18:00"
+  enrollments Enrollment[]
+}
+
+// 5. NEW: Enrollment (Links Student + Course + Shift)
+model Enrollment {
+  id        String   @id @default(uuid())
+  
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  
+  shiftId   String
+  shift     Shift    @relation(fields: [shiftId], references: [id])
+  
+  active    Boolean  @default(true)
+  
+  // An enrollment has many attendance records (one per day)
+  attendance Attendance[]
+}
+
+// 6. NEW: Attendance Record
+model Attendance {
+  id            String      @id @default(uuid())
+  date          DateTime    // The specific day
+  status        AttendanceStatus
+  
+  enrollmentId  String
+  enrollment    Enrollment  @relation(fields: [enrollmentId], references: [id])
+
+  recordedBy    String      // ID of Admin who took attendance
+  createdAt     DateTime    @default(now())
+
+  @@unique([date, enrollmentId]) // Prevent double marking for same class same day
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
