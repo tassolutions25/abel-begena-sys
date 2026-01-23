@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import RegisterUserForm from "@/components/forms/RegisterUserForm"; // Reusing the generic form
+import RegisterUserForm from "@/components/forms/RegisterUserForm";
 
 export default function AddAdminDialog() {
   const [open, setOpen] = useState(false);
@@ -23,10 +23,12 @@ export default function AddAdminDialog() {
       </DialogTrigger>
       <DialogContent className="bg-black border-slate-800 text-white">
         <DialogHeader>
-          <DialogTitle>Register New Admin</DialogTitle>
+          <DialogTitle>Register New Administrator</DialogTitle>
         </DialogHeader>
-        {/* We pass a prop to force the form to register an ADMIN */}
-        <RegisterUserForm forcedRole="ADMIN" onSuccess={() => setOpen(false)} />
+
+        {/* REMOVED 'forcedRole="ADMIN"' so the dropdown appears */}
+        {/* Passing 'adminMode={true}' to filter the dropdown options */}
+        <RegisterUserForm adminMode={true} onSuccess={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   );

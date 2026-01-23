@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react"; // <--- NEW HOOK
+import { useActionState, useEffect, useRef } from "react";
 import { createUser } from "@/actions/admin-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,31 +12,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { toast } from "sonner";
-import { useEffect, useRef } from "react";
 
-// Mock branches - We will replace this with real DB data soon
-const branches = [
-  { id: "addis-bole", name: "Addis Ababa - Bole" },
-  { id: "addis-piassa", name: "Addis Ababa - Piassa" },
-  { id: "chicago-main", name: "Chicago - Main" },
-];
-
+// Accept new prop 'adminMode'
 export default function RegisterUserForm({
+  adminMode = false,
   forcedRole,
   onSuccess,
 }: {
+  adminMode?: boolean;
   forcedRole?: string;
   onSuccess?: () => void;
 }) {
-  // NEW: useActionState returns [state, action, isPending]
   const [state, action, isPending] = useActionState(createUser, null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -44,94 +31,91 @@ export default function RegisterUserForm({
     if (state?.success) {
       toast.success(state.message);
       formRef.current?.reset();
+      if (onSuccess) onSuccess();
     } else if (state?.message) {
       toast.error(state.message);
     }
-  }, [state]);
+  }, [state, onSuccess]);
 
   return (
-    <Card className="w-full max-w-lg shadow-lg border-t-4 border-t-amber-500">
-      <CardHeader>
-        <CardTitle>New Registration</CardTitle>
-        <CardDescription>Add a new Student, Teacher, or Admin.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form ref={formRef} action={action} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input
-              id="fullName"
-              name="fullName"
-              placeholder="Abel Tesfaye"
-              required
-            />
-          </div>
+    <form ref={formRef} action={action} className="space-y-4">
+      {/* ROLE SELECTION LOGIC */}
+      {forcedRole ? (
+        <input type="hidden" name="role" value={forcedRole} />
+      ) : (
+        <div className="space-y-2">
+          <Label>Role</Label>
+          <Select name="role" required>
+            <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
+              <SelectValue placeholder="Select Role" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-700 text-white">
+              {adminMode ? (
+                // Options for Admin Mode
+                <>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                </>
+              ) : (
+                // Options for Regular Mode (Students/Teachers registered here)
+                <>
+                  <SelectItem value="STUDENT">Student</SelectItem>
+                  <SelectItem value="TEACHER">Teacher</SelectItem>
+                </>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="abel@begena.com"
-              required
-            />
-          </div>
+      <div className="space-y-2">
+        <Label>Full Name</Label>
+        <Input
+          name="fullName"
+          className="bg-slate-900 border-slate-700 text-white"
+          required
+        />
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Temporary Password</Label>
-            <Input id="password" name="password" type="password" required />
-          </div>
+      <div className="space-y-2">
+        <Label>Email</Label>
+        <Input
+          name="email"
+          type="email"
+          className="bg-slate-900 border-slate-700 text-white"
+          required
+        />
+      </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {forcedRole ? (
-              <input type="hidden" name="role" value={forcedRole} />
-            ) : (
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select name="role" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="STUDENT">Student</SelectItem>
-                    <SelectItem value="TEACHER">Teacher</SelectItem>
-                    <SelectItem value="ADMIN">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+      <div className="space-y-2">
+        <Label>Password</Label>
+        <Input
+          name="password"
+          type="password"
+          className="bg-slate-900 border-slate-700 text-white"
+          required
+        />
+      </div>
 
-            {!forcedRole && (
-              <div className="space-y-2">
-                <Label htmlFor="branchId">Branch</Label>
-                <Select name="branchId" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {branches.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
+      {/* BRANCH SELECTION (Hide if in Admin Mode) */}
+      {!adminMode && !forcedRole && (
+        <div className="space-y-2">
+          <Label>Branch</Label>
+          {/* NOTE: If you have branch data, map it here. For now simpler input or fetch via client */}
+          <Input
+            name="branchId"
+            placeholder="Enter Branch ID"
+            className="bg-slate-900 border-slate-700 text-white"
+          />
+        </div>
+      )}
 
-          <Button
-            type="submit"
-            className="w-full bg-amber-600 hover:bg-amber-700"
-            disabled={isPending}
-          >
-            {isPending ? "Registering..." : "Register User"}
-          </Button>
-
-          <Button>Register</Button>
-        </form>
-      </CardContent>
-    </Card>
+      <Button
+        disabled={isPending}
+        className="w-full bg-primary text-black font-bold mt-2"
+      >
+        {isPending ? "Registering..." : "Register User"}
+      </Button>
+    </form>
   );
 }
