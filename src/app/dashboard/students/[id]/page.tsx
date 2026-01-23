@@ -6,7 +6,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import DeleteButton from "@/components/ui/delete-button";
 import { deleteEnrollment } from "@/actions/academic-actions";
-import EditEnrollmentDialog from "@/components/dialogs/EditEnrollmentDialog"; // <--- Import Dialog
+import EditEnrollmentDialog from "@/components/dialogs/EditEnrollmentDialog";
+import InitiatePaymentBtn from "@/components/payments/InitiatePayment";
 
 export default async function StudentProfilePage({
   params,
@@ -138,8 +139,8 @@ export default async function StudentProfilePage({
                           {enrollment.programType === "THREE_MONTHS"
                             ? "3 Months"
                             : enrollment.programType === "SIX_MONTHS"
-                            ? "6 Months"
-                            : "9 Months"}
+                              ? "6 Months"
+                              : "9 Months"}
                         </span>
                       </div>
                       <div>
@@ -157,6 +158,19 @@ export default async function StudentProfilePage({
                           ))}
                         </div>
                       </div>
+                    </div>
+                    <div className="mt-4 border-t border-slate-800 pt-3 flex justify-between items-center">
+                      <div className="text-sm">
+                        <span className="text-slate-500">Tuition:</span>
+                        <span className="text-white font-bold ml-2">
+                          {enrollment.course.monthlyPrice} ETB
+                        </span>
+                      </div>
+                      <InitiatePaymentBtn
+                        studentId={student.id}
+                        amount={enrollment.course.monthlyPrice}
+                        reason={`Tuition: ${enrollment.course.name}`}
+                      />
                     </div>
                   </div>
                 ))}

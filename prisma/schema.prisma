@@ -33,6 +33,14 @@ model User {
   teacherShiftId    String?
   teacherShift      TeacherShift? @relation(fields: [teacherShiftId], references: [id])
   teacherAttendance TeacherAttendance[] // Track their daily clock-ins
+
+  baseSalary        Float     @default(0.0) // Monthly Salary
+  bankName          String?
+  bankAccountNumber String?
+
+  // NEW: Relations
+  paymentsMade      Payment[] // Students paying
+  payrollsReceived  Payroll[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -85,7 +93,58 @@ model Branch {
 model Course {
   id          String   @id @default(uuid())
   name        String   // "Begena", "Krar", "Washint", "Masinko"
+
+  monthlyPrice Float   @default(0.0)
   enrollments Enrollment[]
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  studentId   String
+  student     User     @relation(fields: [studentId], references: [id])
+  
+  amount      Float
+  currency    String   @default("ETB")
+  
+  // What are they paying for?
+  month       Int      // e.g. 1 for January
+  year        Int      // e.g. 2026
+  reason      String   // "Tuition Fee - Begena"
+
+  // Chapa Fields
+  txRef       String   @unique // Our internal Reference
+  chapaTxId   String?  // Chapa's Reference
+  status      PaymentStatus @default(PENDING)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Payroll {
+  id          String   @id @default(uuid())
+  teacherId   String
+  teacher     User     @relation(fields: [teacherId], references: [id])
+  
+  amount      Float
+  month       Int
+  year        Int
+  
+  status      PayrollStatus @default(PENDING)
+  paidAt      DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum PayrollStatus {
+  PENDING
+  PROCESSED // Meaning we sent the money
 }
 
 // 4. NEW: Shifts (Dynamic Time Slots)
