@@ -10,32 +10,47 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Settings, Users } from "lucide-react";
-
-// import { verifyPaymentAction } from "@/actions/payment-actions";
-// import { CheckCircle, XCircle } from "lucide-react";
+import {
+  Settings,
+  Users,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function PaymentsPage() {
+  // 1. Fetch Recent Transactions
   const recentPayments = await prisma.payment.findMany({
     take: 10,
     orderBy: { createdAt: "desc" },
     include: { student: true },
   });
 
-  // Calculate Total Revenue (Success only)
-  const revenue = await prisma.payment.aggregate({
+  // 2. Calculate Total Income (Student Payments that succeeded)
+  const incomeAgg = await prisma.payment.aggregate({
     where: { status: "SUCCESS" },
     _sum: { amount: true },
   });
+  const totalIncome = incomeAgg._sum.amount || 0;
+
+  // 3. Calculate Total Expense (Teacher Salaries that are PROCESSED)
+  const expenseAgg = await prisma.payroll.aggregate({
+    where: { status: "PROCESSED" },
+    _sum: { amount: true },
+  });
+  const totalExpense = expenseAgg._sum.amount || 0;
+
+  // 4. Calculate Net Balance
+  const netBalance = totalIncome - totalExpense;
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold text-white">Financials</h2>
-          <p className="text-slate-400">Manage Tuition & Salaries</p>
+          <h2 className="text-3xl font-bold text-white">Financial Overview</h2>
+          <p className="text-slate-400">Cashflow & Payroll</p>
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/payments/payroll">
@@ -43,7 +58,7 @@ export default async function PaymentsPage() {
               variant="outline"
               className="border-slate-700 text-slate-300 bg-black hover:bg-slate-900"
             >
-              <Users className="mr-2 h-4 w-4" /> Payroll
+              <Users className="mr-2 h-4 w-4" /> Payroll Manager
             </Button>
           </Link>
           <Link href="/dashboard/payments/settings">
@@ -57,17 +72,53 @@ export default async function PaymentsPage() {
         </div>
       </div>
 
+      {/* --- FINANCIAL CARDS --- */}
       <div className="grid md:grid-cols-3 gap-4">
-        <Card className="bg-black border-slate-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-slate-400 text-sm">
-              Total Revenue (Verified)
+        {/* INCOME */}
+        <Card className="bg-slate-900/50 border-slate-800">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-400">
+              Total Revenue
             </CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-500">
-              {revenue._sum.amount || 0} ETB
+              +{totalIncome.toLocaleString()} ETB
             </div>
+            <p className="text-xs text-slate-500">From Student Tuition</p>
+          </CardContent>
+        </Card>
+
+        {/* EXPENSE */}
+        <Card className="bg-slate-900/50 border-slate-800">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-400">
+              Total Payouts
+            </CardTitle>
+            <TrendingDown className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">
+              -{totalExpense.toLocaleString()} ETB
+            </div>
+            <p className="text-xs text-slate-500">Teacher Salaries</p>
+          </CardContent>
+        </Card>
+
+        {/* BALANCE */}
+        <Card className="bg-black border-slate-800 border-l-4 border-l-primary">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-white">
+              School Balance
+            </CardTitle>
+            <Wallet className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">
+              {netBalance.toLocaleString()} ETB
+            </div>
+            <p className="text-xs text-slate-500">Available Funds</p>
           </CardContent>
         </Card>
       </div>
@@ -118,44 +169,3 @@ export default async function PaymentsPage() {
     </div>
   );
 }
-
-// export default async function VerifyPaymentPage({
-//   searchParams,
-// }: {
-//   searchParams: Promise<{ tx_ref: string }>;
-// }) {
-//   const { tx_ref } = await searchParams;
-
-//   // This runs the DB update.
-//   // Since we removed revalidatePath, this will now succeed without crashing.
-//   const result = await verifyPaymentAction(tx_ref);
-
-//   return (
-//     <div className="flex h-screen items-center justify-center bg-black">
-//       <Card className="w-full max-w-md border-slate-800 bg-slate-900">
-//         <CardHeader className="text-center">
-//           {result.success ? (
-//             <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
-//           ) : (
-//             <XCircle className="mx-auto h-16 w-16 text-red-500 mb-4" />
-//           )}
-//           <CardTitle className="text-white text-xl">
-//             {result.success ? "Payment Successful" : "Payment Failed"}
-//           </CardTitle>
-//         </CardHeader>
-//         <CardContent className="text-center space-y-4">
-//           <p className="text-slate-400">{result.message}</p>
-//           <p className="text-xs text-slate-500 font-mono">Ref: {tx_ref}</p>
-
-//           {/* When clicked, this Link loads the Dashboard.
-//                 Because the Dashboard is dynamic, it fetches the fresh SUCCESS status. */}
-//           <Link href="/dashboard/payments">
-//             <Button className="w-full bg-primary text-black font-bold">
-//               Return to Dashboard
-//             </Button>
-//           </Link>
-//         </CardContent>
-//       </Card>
-//     </div>
-//   );
-// }

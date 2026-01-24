@@ -211,13 +211,26 @@ export async function updateTeacherFinancials(
 ) {
   const id = formData.get("id") as string;
   const salary = parseFloat(formData.get("salary") as string);
-  const bankName = formData.get("bankName") as string;
   const account = formData.get("account") as string;
+
+  // We get the Bank ID from the dropdown
+  const bankId = formData.get("bankId") as string;
+
+  // Find the selected bank to get its Name and Code
+  const bank = await prisma.bank.findUnique({ where: { id: bankId } });
+
+  if (!bank) return { success: false, message: "Invalid Bank Selected" };
 
   await prisma.user.update({
     where: { id },
-    data: { baseSalary: salary, bankName, bankAccountNumber: account },
+    data: {
+      baseSalary: salary,
+      bankAccountNumber: account,
+      bankName: bank.name, // Saved for display
+      bankCode: bank.code, // Saved for API
+    },
   });
+
   revalidatePath("/dashboard/payments/settings");
   return { message: "Teacher Financials Updated", success: true };
 }

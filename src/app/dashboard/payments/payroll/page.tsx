@@ -1,7 +1,4 @@
-import {
-  generateMonthlyPayroll,
-  processTeacherPayment,
-} from "@/actions/payment-actions";
+import { generateMonthlyPayroll } from "@/actions/payroll-actions";
 import prisma from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CheckCircle, Play } from "lucide-react";
+import { CheckCircle, Play, AlertCircle, RefreshCw } from "lucide-react"; // <--- Import RefreshCw
+import BulkPayButton from "@/components/payments/BulkPayButton";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +23,12 @@ export default async function PayrollPage() {
   const payrolls = await prisma.payroll.findMany({
     where: { month: currentMonth, year: currentYear },
     include: { teacher: true },
+    orderBy: { teacher: { fullName: "asc" } },
   });
+
+  // Calculate Totals
+  const pendingPayrolls = payrolls.filter((p) => p.status === "PENDING");
+  const totalAmount = pendingPayrolls.reduce((sum, p) => sum + p.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -37,19 +40,69 @@ export default async function PayrollPage() {
           </p>
         </div>
 
-        {/* GENERATOR BUTTON (Simulates "System pays by itself") */}
-        <form
-          action={async () => {
-            "use server";
-            await generateMonthlyPayroll(currentMonth, currentYear);
-          }}
-        >
-          <Button className="bg-primary text-black font-bold">
-            <Play className="mr-2 h-4 w-4" /> Run Monthly Payroll
-          </Button>
-        </form>
+        {/* ACTION BUTTONS */}
+        <div className="flex gap-2">
+          {payrolls.length === 0 ? (
+            // 1. GENERATE BUTTON (If list is empty)
+            <form
+              action={async () => {
+                "use server";
+                await generateMonthlyPayroll(currentMonth, currentYear);
+              }}
+            >
+              <Button className="bg-primary text-black font-bold">
+                <Play className="mr-2 h-4 w-4" /> Generate List
+              </Button>
+            </form>
+          ) : (
+            <>
+              {/* 2. REFRESH BUTTON (Always visible if list exists) */}
+              <form
+                action={async () => {
+                  "use server";
+                  await generateMonthlyPayroll(currentMonth, currentYear);
+                }}
+              >
+                <Button
+                  variant="outline"
+                  className="border-slate-700 bg-black text-slate-300 hover:bg-slate-900"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" /> Sync / Add New
+                </Button>
+              </form>
+
+              {/* 3. CONFIRM BUTTON (If there are pending items) */}
+              {pendingPayrolls.length > 0 ? (
+                <BulkPayButton
+                  month={currentMonth}
+                  year={currentYear}
+                  totalAmount={totalAmount}
+                  count={pendingPayrolls.length}
+                />
+              ) : (
+                <Button disabled className="bg-slate-800 text-slate-500">
+                  <CheckCircle className="mr-2 h-4 w-4" /> All Paid
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
+      {/* SUMMARY CARD */}
+      {pendingPayrolls.length > 0 && (
+        <div className="p-4 bg-amber-900/10 border border-amber-900/50 rounded flex gap-3 items-center text-amber-200">
+          <AlertCircle className="h-5 w-5" />
+          <p className="text-sm">
+            <strong>Action Required:</strong> Please review the list below.
+            Click "Confirm & Pay All" to transfer{" "}
+            <strong>{totalAmount} ETB</strong> to{" "}
+            <strong>{pendingPayrolls.length} teachers</strong>.
+          </p>
+        </div>
+      )}
+
+      {/* TABLE (Keep as is) */}
       <div className="bg-black border border-slate-800 rounded-lg overflow-hidden">
         <Table>
           <TableHeader className="bg-slate-900">
@@ -59,7 +112,7 @@ export default async function PayrollPage() {
               <TableHead className="text-slate-300">Salary</TableHead>
               <TableHead className="text-slate-300">Status</TableHead>
               <TableHead className="text-right text-slate-300">
-                Action
+                Transfer Ref
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -70,35 +123,29 @@ export default async function PayrollPage() {
                   {p.teacher.fullName}
                 </TableCell>
                 <TableCell className="text-slate-400 text-sm">
-                  {p.teacher.bankName || "N/A"} -{" "}
-                  {p.teacher.bankAccountNumber || "N/A"}
+                  <div className="flex flex-col">
+                    <span className="text-white">
+                      {p.teacher.bankName || "No Bank Set"}
+                    </span>
+                    <span className="text-xs">
+                      {p.teacher.bankAccountNumber || "Missing Account"}
+                    </span>
+                  </div>
                 </TableCell>
                 <TableCell className="text-white">{p.amount} ETB</TableCell>
                 <TableCell>
                   {p.status === "PROCESSED" ? (
-                    <span className="text-green-500 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" /> Paid
+                    <span className="text-green-500 bg-green-900/20 px-2 py-1 rounded text-xs border border-green-900">
+                      Paid
                     </span>
                   ) : (
-                    <span className="text-amber-500">Pending</span>
+                    <span className="text-amber-500 bg-amber-900/20 px-2 py-1 rounded text-xs border border-amber-900">
+                      Pending
+                    </span>
                   )}
                 </TableCell>
-                <TableCell className="text-right">
-                  {p.status === "PENDING" && (
-                    <form
-                      action={async () => {
-                        "use server";
-                        await processTeacherPayment(p.id);
-                      }}
-                    >
-                      <Button
-                        size="sm"
-                        className="bg-green-700 hover:bg-green-600 text-white"
-                      >
-                        Mark Paid
-                      </Button>
-                    </form>
-                  )}
+                <TableCell className="text-right text-xs font-mono text-slate-500">
+                  {p.transferRef || "-"}
                 </TableCell>
               </TableRow>
             ))}
