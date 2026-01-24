@@ -12,6 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Settings, Users } from "lucide-react";
 
+// import { verifyPaymentAction } from "@/actions/payment-actions";
+// import { CheckCircle, XCircle } from "lucide-react";
+
 export const dynamic = "force-dynamic";
 
 export default async function PaymentsPage() {
@@ -115,3 +118,44 @@ export default async function PaymentsPage() {
     </div>
   );
 }
+
+// export default async function VerifyPaymentPage({
+//   searchParams,
+// }: {
+//   searchParams: Promise<{ tx_ref: string }>;
+// }) {
+//   const { tx_ref } = await searchParams;
+
+//   // This runs the DB update.
+//   // Since we removed revalidatePath, this will now succeed without crashing.
+//   const result = await verifyPaymentAction(tx_ref);
+
+//   return (
+//     <div className="flex h-screen items-center justify-center bg-black">
+//       <Card className="w-full max-w-md border-slate-800 bg-slate-900">
+//         <CardHeader className="text-center">
+//           {result.success ? (
+//             <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+//           ) : (
+//             <XCircle className="mx-auto h-16 w-16 text-red-500 mb-4" />
+//           )}
+//           <CardTitle className="text-white text-xl">
+//             {result.success ? "Payment Successful" : "Payment Failed"}
+//           </CardTitle>
+//         </CardHeader>
+//         <CardContent className="text-center space-y-4">
+//           <p className="text-slate-400">{result.message}</p>
+//           <p className="text-xs text-slate-500 font-mono">Ref: {tx_ref}</p>
+
+//           {/* When clicked, this Link loads the Dashboard.
+//                 Because the Dashboard is dynamic, it fetches the fresh SUCCESS status. */}
+//           <Link href="/dashboard/payments">
+//             <Button className="w-full bg-primary text-black font-bold">
+//               Return to Dashboard
+//             </Button>
+//           </Link>
+//         </CardContent>
+//       </Card>
+//     </div>
+//   );
+// }

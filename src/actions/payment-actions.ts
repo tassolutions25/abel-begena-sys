@@ -88,25 +88,72 @@ export async function initiateStudentPayment(
 }
 
 // ... keep other functions (verifyPaymentAction, etc) ...
+// export async function verifyPaymentAction(txRef: string) {
+//   try {
+//     const result = await verifyChapaTransaction(txRef);
+//     if (result.status === "success") {
+//       await prisma.payment.update({
+//         where: { txRef },
+//         data: { status: "SUCCESS", chapaTxId: String(result.data.reference) },
+//       });
+//       revalidatePath("/dashboard/payments");
+//       return { success: true, message: "Payment Verified Successfully!" };
+//     } else {
+//       await prisma.payment.update({
+//         where: { txRef },
+//         data: { status: "FAILED" },
+//       });
+//       return { success: false, message: "Payment Failed or Pending." };
+//     }
+//   } catch (e) {
+//     return { success: false, message: "Verification Error" };
+//   }
+// }
+
 export async function verifyPaymentAction(txRef: string) {
+  console.log("--- STARTING VERIFICATION ---");
+  console.log("Transaction Ref:", txRef);
+
   try {
+    // 1. Check DB
+    const existingPayment = await prisma.payment.findUnique({
+      where: { txRef },
+    });
+    if (!existingPayment) return { success: false, message: "Record missing." };
+
+    // 2. Verify with Chapa
     const result = await verifyChapaTransaction(txRef);
-    if (result.status === "success") {
-      await prisma.payment.update({
-        where: { txRef },
-        data: { status: "SUCCESS", chapaTxId: String(result.data.reference) },
-      });
-      revalidatePath("/dashboard/payments");
-      return { success: true, message: "Payment Verified Successfully!" };
-    } else {
+
+    if (!result || result.status !== "success") {
       await prisma.payment.update({
         where: { txRef },
         data: { status: "FAILED" },
       });
-      return { success: false, message: "Payment Failed or Pending." };
+      return { success: false, message: "Payment verification failed." };
     }
-  } catch (e) {
-    return { success: false, message: "Verification Error" };
+
+    // 3. Update DB to SUCCESS
+    await prisma.payment.update({
+      where: { txRef },
+      data: {
+        status: "SUCCESS",
+        chapaTxId: String(result.data.reference),
+      },
+    });
+
+    // ---------------------------------------------------------
+    // REMOVE OR COMMENT OUT THIS LINE:
+    // revalidatePath("/dashboard/payments");
+    // ---------------------------------------------------------
+
+    // Rationale: The Dashboard page is 'force-dynamic', so it will
+    // fetch the latest 'SUCCESS' status automatically when the user
+    // clicks "Return to Dashboard".
+
+    return { success: true, message: "Payment Verified Successfully!" };
+  } catch (e: any) {
+    console.error("VERIFICATION ERROR:", e);
+    return { success: false, message: "System Error" };
   }
 }
 
