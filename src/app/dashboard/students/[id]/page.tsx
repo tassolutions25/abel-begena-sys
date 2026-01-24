@@ -16,22 +16,48 @@ export default async function StudentProfilePage({
 }) {
   const { id } = await params;
 
-  // 1. Fetch Student Info
+  // 1. Fetch Student Info with all relations
   const student = await prisma.user.findUnique({
     where: { id },
     include: {
       branch: true,
       enrollments: {
-        include: { course: true, shift: true },
+        include: {
+          course: true,
+          shift: true,
+          pricingPlan: true, // <--- Get the Plan
+        },
         orderBy: { course: { name: "asc" } },
       },
     },
   });
 
-  // 2. Fetch Shifts (Needed for the edit dropdown)
-  const shifts = await prisma.shift.findMany();
-
   if (!student) return notFound();
+
+  // 2. Fetch Shifts & Plans (Needed for the edit dropdowns)
+  const shifts = await prisma.shift.findMany();
+  const plans = await prisma.pricingPlan.findMany();
+
+  // 3. Helper to find specific price from the junction table
+  const getDynamicPrice = async (courseId: string, planId: string | null) => {
+    if (!planId) return 0;
+    const priceRecord = await prisma.coursePrice.findUnique({
+      where: { courseId_pricingPlanId: { courseId, pricingPlanId: planId } },
+    });
+    return priceRecord?.amount || 0;
+  };
+
+  // 4. Pre-process Enrollments (Fix for Async/Await in JSX)
+  // We calculate the price for every enrollment BEFORE rendering
+  const enrichedEnrollments = await Promise.all(
+    student.enrollments.map(async (enrollment) => {
+      const price = await getDynamicPrice(
+        enrollment.courseId,
+        enrollment.pricingPlanId,
+      );
+      return { ...enrollment, currentPrice: price };
+    }),
+  );
 
   return (
     <div className="space-y-6">
@@ -72,7 +98,6 @@ export default async function StudentProfilePage({
               <Mail className="h-4 w-4 text-primary" />{" "}
               <span>{student.email}</span>
             </div>
-            {/* FIXED: Phone Number Display */}
             <div className="flex items-center gap-3 text-slate-300">
               <Phone className="h-4 w-4 text-primary" />
               <span>{student.phone || "No Phone Recorded"}</span>
@@ -90,17 +115,18 @@ export default async function StudentProfilePage({
             <CardTitle className="text-white">Academic Enrollments</CardTitle>
           </CardHeader>
           <CardContent>
-            {student.enrollments.length === 0 ? (
+            {enrichedEnrollments.length === 0 ? (
               <p className="text-slate-500">
                 Student is not enrolled in any classes yet.
               </p>
             ) : (
               <div className="space-y-3">
-                {student.enrollments.map((enrollment) => (
+                {enrichedEnrollments.map((enrollment) => (
                   <div
                     key={enrollment.id}
                     className="flex flex-col gap-2 p-4 bg-slate-900 rounded border border-slate-800"
                   >
+                    {/* Top Row: Course Name & Actions */}
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="text-lg font-bold text-primary">
@@ -118,12 +144,11 @@ export default async function StudentProfilePage({
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        {/* NEW: Edit Button */}
                         <EditEnrollmentDialog
                           enrollment={enrollment}
                           shifts={shifts}
+                          plans={plans}
                         />
-                        {/* Delete Button */}
                         <DeleteButton
                           id={enrollment.id}
                           deleteAction={deleteEnrollment}
@@ -131,16 +156,12 @@ export default async function StudentProfilePage({
                       </div>
                     </div>
 
-                    {/* Program Details */}
+                    {/* Middle Row: Plan Details & Schedule */}
                     <div className="mt-2 pt-2 border-t border-slate-800 text-sm">
                       <div className="flex justify-between mb-2">
-                        <span className="text-slate-500">Program:</span>
-                        <span className="text-white">
-                          {enrollment.programType === "THREE_MONTHS"
-                            ? "3 Months"
-                            : enrollment.programType === "SIX_MONTHS"
-                              ? "6 Months"
-                              : "9 Months"}
+                        <span className="text-slate-500">Plan:</span>
+                        <span className="text-white font-medium">
+                          {enrollment.pricingPlan?.name || "No Plan Selected"}
                         </span>
                       </div>
                       <div>
@@ -159,18 +180,29 @@ export default async function StudentProfilePage({
                         </div>
                       </div>
                     </div>
+
+                    {/* Bottom Row: Payment */}
                     <div className="mt-4 border-t border-slate-800 pt-3 flex justify-between items-center">
                       <div className="text-sm">
-                        <span className="text-slate-500">Tuition:</span>
+                        <span className="text-slate-500">Monthly Tuition:</span>
                         <span className="text-white font-bold ml-2">
-                          {enrollment.course.monthlyPrice} ETB
+                          {enrollment.currentPrice > 0
+                            ? `${enrollment.currentPrice} ETB`
+                            : "Price Not Set"}
                         </span>
                       </div>
-                      <InitiatePaymentBtn
-                        studentId={student.id}
-                        amount={enrollment.course.monthlyPrice}
-                        reason={`Tuition: ${enrollment.course.name}`}
-                      />
+
+                      {enrollment.currentPrice > 0 ? (
+                        <InitiatePaymentBtn
+                          studentId={student.id}
+                          amount={enrollment.currentPrice}
+                          reason={`Tuition: ${enrollment.course.name}`}
+                        />
+                      ) : (
+                        <span className="text-xs text-red-500 bg-red-900/10 px-2 py-1 rounded border border-red-900">
+                          Set Price in Settings
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}

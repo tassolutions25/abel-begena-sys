@@ -3,6 +3,7 @@ import { useState } from "react";
 import { initiateStudentPayment } from "@/actions/payment-actions";
 import { Button } from "@/components/ui/button";
 import { Loader2, CreditCard } from "lucide-react";
+import { toast } from "sonner"; // Using Sonner for better alerts
 
 export default function InitiatePaymentBtn({ studentId, amount, reason }: any) {
   const [loading, setLoading] = useState(false);
@@ -10,6 +11,7 @@ export default function InitiatePaymentBtn({ studentId, amount, reason }: any) {
   const handlePay = async () => {
     setLoading(true);
     const date = new Date();
+
     const res = await initiateStudentPayment(
       studentId,
       amount,
@@ -19,9 +21,12 @@ export default function InitiatePaymentBtn({ studentId, amount, reason }: any) {
     );
 
     if (res.success && res.checkoutUrl) {
-      window.location.href = res.checkoutUrl; // Redirect to Chapa
+      // Redirect to Chapa
+      window.location.href = res.checkoutUrl;
     } else {
-      alert("Error: " + res.message);
+      // Show error cleanly
+      console.error("Payment Error:", res.message);
+      toast.error(res.message || "Payment initialization failed.");
       setLoading(false);
     }
   };
@@ -31,14 +36,16 @@ export default function InitiatePaymentBtn({ studentId, amount, reason }: any) {
       onClick={handlePay}
       disabled={loading}
       size="sm"
-      className="bg-green-600 hover:bg-green-700 text-white"
+      className="bg-green-600 hover:bg-green-700 text-white font-bold"
     >
       {loading ? (
         <Loader2 className="animate-spin h-4 w-4" />
       ) : (
-        <CreditCard className="mr-2 h-4 w-4" />
+        <div className="flex items-center gap-2">
+          <CreditCard className="h-4 w-4" />
+          <span>Pay {amount} ETB</span>
+        </div>
       )}
-      Pay {amount} ETB
     </Button>
   );
 }

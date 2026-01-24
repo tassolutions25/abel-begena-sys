@@ -35,29 +35,31 @@ const DAYS = [
 export default function EditEnrollmentDialog({
   enrollment,
   shifts,
+  plans,
 }: {
   enrollment: any;
   shifts: any[];
+  plans: any[]; // <--- Accept Plans
 }) {
   const [open, setOpen] = useState(false);
   const [state, action, isPending] = useActionState(updateEnrollment, null);
 
-  // Initialize state
-  const [program, setProgram] = useState(enrollment.programType);
+  // Initialize with existing data
+  const [selectedPlanId, setSelectedPlanId] = useState(
+    enrollment.pricingPlanId || "",
+  );
   const [selectedDays, setSelectedDays] = useState<string[]>(
-    enrollment.selectedDays
+    enrollment.selectedDays,
   );
 
-  const requiredDays =
-    program === "THREE_MONTHS" ? 5 : program === "SIX_MONTHS" ? 3 : 2;
+  const activePlan = plans.find((p) => p.id === selectedPlanId);
+  const requiredDays = activePlan ? activePlan.daysPerWeek : 0;
 
-  // 1. FIX: Sync state when the 'enrollment' prop updates (after a save)
   useEffect(() => {
-    setProgram(enrollment.programType);
+    setSelectedPlanId(enrollment.pricingPlanId || "");
     setSelectedDays(enrollment.selectedDays);
   }, [enrollment]);
 
-  // 2. Handle Server Action success
   useEffect(() => {
     if (state?.success) {
       toast.success(state.message);
@@ -69,7 +71,7 @@ export default function EditEnrollmentDialog({
 
   const handleDayToggle = (day: string) => {
     setSelectedDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
     );
   };
 
@@ -95,7 +97,7 @@ export default function EditEnrollmentDialog({
             <Label>Time Shift</Label>
             <Select name="shiftId" defaultValue={enrollment.shiftId}>
               <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                <SelectValue placeholder="Select Shift" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-slate-900 border-slate-700 text-white">
                 {shifts.map((s) => (
@@ -108,19 +110,21 @@ export default function EditEnrollmentDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Program Duration</Label>
+            <Label>Pricing Plan</Label>
             <Select
-              name="programType"
-              value={program}
-              onValueChange={setProgram}
+              name="pricingPlanId"
+              value={selectedPlanId}
+              onValueChange={setSelectedPlanId}
             >
               <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                <SelectValue />
+                <SelectValue placeholder="Select Plan" />
               </SelectTrigger>
               <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                <SelectItem value="THREE_MONTHS">3 Months (5 Days)</SelectItem>
-                <SelectItem value="SIX_MONTHS">6 Months (3 Days)</SelectItem>
-                <SelectItem value="NINE_MONTHS">9 Months (2 Days)</SelectItem>
+                {plans.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -129,16 +133,13 @@ export default function EditEnrollmentDialog({
             <div className="flex justify-between items-center">
               <Label>Select Days</Label>
               <span
-                className={`text-xs ${
-                  selectedDays.length === requiredDays
-                    ? "text-green-500"
-                    : "text-amber-500"
-                }`}
+                className={`text-xs ${selectedDays.length === requiredDays ? "text-green-500" : "text-amber-500"}`}
               >
-                Selected: {selectedDays.length} / {requiredDays}
+                {requiredDays > 0
+                  ? `Selected: ${selectedDays.length} / ${requiredDays}`
+                  : "Select a plan"}
               </span>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               {DAYS.map((day) => (
                 <div key={day.id} className="flex items-center space-x-2">
@@ -151,7 +152,7 @@ export default function EditEnrollmentDialog({
                     readOnly
                   />
                   <Checkbox
-                    id={`edit-${enrollment.id}-${day.id}`} // Unique ID fix
+                    id={`edit-${enrollment.id}-${day.id}`}
                     checked={selectedDays.includes(day.id)}
                     onCheckedChange={() => handleDayToggle(day.id)}
                     className="border-slate-600 data-[state=checked]:bg-primary"

@@ -94,8 +94,32 @@ model Course {
   id          String   @id @default(uuid())
   name        String   // "Begena", "Krar", "Washint", "Masinko"
 
-  monthlyPrice Float   @default(0.0)
   enrollments Enrollment[]
+   prices      CoursePrice[]
+}
+
+model PricingPlan {
+  id          String   @id @default(uuid())
+  name        String   // e.g. "3 Months (Standard)"
+  duration    Int      // Duration in months (e.g. 3)
+  daysPerWeek Int      // e.g. 3
+  
+  coursePrices CoursePrice[]
+  enrollments  Enrollment[]
+}
+
+// 2. THE JUNCTION TABLE (Specific Price per Class per Plan)
+model CoursePrice {
+  id            String   @id @default(uuid())
+  amount        Float    @default(0.0) // The Monthly Fee (e.g. 1000)
+  
+  courseId      String
+  course        Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  pricingPlanId String
+  pricingPlan   PricingPlan @relation(fields: [pricingPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, pricingPlanId]) // Ensure only one price exists for this combo
 }
 
 model Payment {
@@ -167,8 +191,10 @@ model Enrollment {
   
   shiftId   String
   shift     Shift    @relation(fields: [shiftId], references: [id])
+
+  pricingPlanId String?
+  pricingPlan   PricingPlan? @relation(fields: [pricingPlanId], references: [id])
   
-  // NEW FIELDS
   programType  ProgramType @default(THREE_MONTHS)
   selectedDays DayOfWeek[] // This stores ["MONDAY", "WEDNESDAY", etc.]
   

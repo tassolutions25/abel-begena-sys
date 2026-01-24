@@ -32,6 +32,7 @@ export default async function StudentsPage() {
 
   const courses = await prisma.course.findMany();
   const shifts = await prisma.shift.findMany();
+  const plans = await prisma.pricingPlan.findMany();
 
   return (
     <div className="space-y-6">
@@ -99,6 +100,7 @@ export default async function StudentsPage() {
                       studentId={student.id}
                       courses={courses}
                       shifts={shifts}
+                      plans={plans}
                     />
                     <StudentEditDialog student={student} branches={branches} />
                     <DeleteButton id={student.id} deleteAction={deleteUser} />

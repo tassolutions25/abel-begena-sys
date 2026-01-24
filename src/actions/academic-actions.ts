@@ -35,27 +35,25 @@ export async function enrollStudent(prevState: any, formData: FormData) {
     const studentId = formData.get("studentId") as string;
     const courseId = formData.get("courseId") as string;
     const shiftId = formData.get("shiftId") as string;
-    const programType = formData.get("programType") as ProgramType;
+    const pricingPlanId = formData.get("pricingPlanId") as string; // <--- NEW FIELD
 
     // Get all checked days from form data
     const selectedDays = formData.getAll("days") as DayOfWeek[];
 
-    // 1. Validate Day Count based on Program
-    if (programType === "THREE_MONTHS" && selectedDays.length !== 5) {
-      return {
-        message: "3-Month Program requires exactly 5 days.",
-        success: false,
-      };
+    if (!pricingPlanId) {
+      return { message: "Please select a pricing plan.", success: false };
     }
-    if (programType === "SIX_MONTHS" && selectedDays.length !== 3) {
+
+    // 1. Fetch the Plan to validate days
+    const plan = await prisma.pricingPlan.findUnique({
+      where: { id: pricingPlanId },
+    });
+    if (!plan) return { message: "Invalid Plan Selected", success: false };
+
+    // 2. Validate Day Count
+    if (selectedDays.length !== plan.daysPerWeek) {
       return {
-        message: "6-Month Program requires exactly 3 days.",
-        success: false,
-      };
-    }
-    if (programType === "NINE_MONTHS" && selectedDays.length !== 2) {
-      return {
-        message: "9-Month Program requires exactly 2 days.",
+        message: `${plan.name} requires exactly ${plan.daysPerWeek} days. You selected ${selectedDays.length}.`,
         success: false,
       };
     }
@@ -64,13 +62,13 @@ export async function enrollStudent(prevState: any, formData: FormData) {
       return { message: "Please select learning days.", success: false };
     }
 
-    // 2. Save to DB
+    // 3. Save to DB with the Relation
     await prisma.enrollment.create({
       data: {
         studentId,
         courseId,
         shiftId,
-        programType,
+        pricingPlanId, // <--- SAVING THE LINK
         selectedDays,
       },
     });
@@ -149,41 +147,33 @@ export async function updateEnrollment(prevState: any, formData: FormData) {
   try {
     const enrollmentId = formData.get("enrollmentId") as string;
     const shiftId = formData.get("shiftId") as string;
-    const programType = formData.get("programType") as ProgramType;
-    // Get all checked days
+    const pricingPlanId = formData.get("pricingPlanId") as string; // <--- NEW
     const selectedDays = formData.getAll("days") as DayOfWeek[];
 
-    // 1. Validate Day Count based on Program Logic
-    if (programType === "THREE_MONTHS" && selectedDays.length !== 5) {
+    // 1. Fetch Plan Logic
+    const plan = await prisma.pricingPlan.findUnique({
+      where: { id: pricingPlanId },
+    });
+    if (!plan) return { message: "Invalid Plan", success: false };
+
+    // 2. Validate
+    if (selectedDays.length !== plan.daysPerWeek) {
       return {
-        message: "3-Month Program requires exactly 5 days.",
-        success: false,
-      };
-    }
-    if (programType === "SIX_MONTHS" && selectedDays.length !== 3) {
-      return {
-        message: "6-Month Program requires exactly 3 days.",
-        success: false,
-      };
-    }
-    if (programType === "NINE_MONTHS" && selectedDays.length !== 2) {
-      return {
-        message: "9-Month Program requires exactly 2 days.",
+        message: `${plan.name} requires exactly ${plan.daysPerWeek} days.`,
         success: false,
       };
     }
 
-    // 2. Update Database
+    // 3. Update Database
     await prisma.enrollment.update({
       where: { id: enrollmentId },
       data: {
         shiftId,
-        programType,
+        pricingPlanId,
         selectedDays,
       },
     });
 
-    // Revalidate the student details page
     revalidatePath("/dashboard/students/[id]", "page");
     return { message: "Enrollment Updated Successfully!", success: true };
   } catch (e) {

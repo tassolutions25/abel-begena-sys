@@ -32,31 +32,35 @@ const DAYS = [
   { id: "SUNDAY", label: "Sunday" },
 ];
 
+// 1. Accept 'plans' prop
 export default function EnrollDialog({
   studentId,
   courses,
   shifts,
+  plans,
 }: {
   studentId: string;
   courses: any[];
   shifts: any[];
+  plans: any[];
 }) {
   const [open, setOpen] = useState(false);
   const [state, action, isPending] = useActionState(enrollStudent, null);
 
-  // State for logic
-  const [program, setProgram] = useState("THREE_MONTHS");
+  // 2. Track Selected Plan ID to know required days
+  const [selectedPlanId, setSelectedPlanId] = useState("");
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
 
-  // Calculate required days based on selection
-  const requiredDays =
-    program === "THREE_MONTHS" ? 5 : program === "SIX_MONTHS" ? 3 : 2;
+  // Find the full plan object based on ID
+  const activePlan = plans.find((p) => p.id === selectedPlanId);
+  const requiredDays = activePlan ? activePlan.daysPerWeek : 0;
 
   useEffect(() => {
     if (state?.success) {
       toast.success(state.message);
       setOpen(false);
-      setSelectedDays([]); // Reset
+      setSelectedDays([]);
+      setSelectedPlanId("");
     } else if (state?.message) {
       toast.error(state.message);
     }
@@ -64,7 +68,7 @@ export default function EnrollDialog({
 
   const handleDayToggle = (day: string) => {
     setSelectedDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
     );
   };
 
@@ -86,7 +90,6 @@ export default function EnrollDialog({
         <form action={action} className="space-y-4">
           <input type="hidden" name="studentId" value={studentId} />
 
-          {/* 1. Select Class */}
           <div className="space-y-2">
             <Label>Class Instrument</Label>
             <Select name="courseId" required>
@@ -103,7 +106,6 @@ export default function EnrollDialog({
             </Select>
           </div>
 
-          {/* 2. Select Shift */}
           <div className="space-y-2">
             <Label>Time Shift</Label>
             <Select name="shiftId" required>
@@ -120,51 +122,48 @@ export default function EnrollDialog({
             </Select>
           </div>
 
-          {/* 3. Select Program Type */}
+          {/* 3. DYNAMIC PLAN DROPDOWN */}
           <div className="space-y-2">
-            <Label>Program Duration</Label>
+            <Label>Pricing Plan</Label>
             <Select
-              name="programType"
-              value={program}
-              onValueChange={setProgram}
+              name="pricingPlanId"
+              onValueChange={setSelectedPlanId}
               required
             >
               <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                <SelectValue />
+                <SelectValue placeholder="Select Plan" />
               </SelectTrigger>
               <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                <SelectItem value="THREE_MONTHS">
-                  3 Months (5 Days/Week)
-                </SelectItem>
-                <SelectItem value="SIX_MONTHS">
-                  6 Months (3 Days/Week)
-                </SelectItem>
-                <SelectItem value="NINE_MONTHS">
-                  9 Months (2 Days/Week)
-                </SelectItem>
+                {plans.length === 0 ? (
+                  <div className="p-2 text-xs text-slate-500">
+                    No plans found. Go to Settings.
+                  </div>
+                ) : (
+                  plans.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} ({p.duration} Months)
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
 
-          {/* 4. Select Days */}
           <div className="space-y-3 pt-2 border-t border-slate-800">
             <div className="flex justify-between items-center">
               <Label>Select Learning Days</Label>
               <span
-                className={`text-xs ${
-                  selectedDays.length === requiredDays
-                    ? "text-green-500"
-                    : "text-amber-500"
-                }`}
+                className={`text-xs ${selectedDays.length === requiredDays ? "text-green-500" : "text-amber-500"}`}
               >
-                Selected: {selectedDays.length} / {requiredDays}
+                {requiredDays > 0
+                  ? `Selected: ${selectedDays.length} / ${requiredDays}`
+                  : "Select a plan first"}
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               {DAYS.map((day) => (
                 <div key={day.id} className="flex items-center space-x-2">
-                  {/* Hidden input to allow form submission of arrays */}
                   <input
                     type="checkbox"
                     name="days"
@@ -173,16 +172,16 @@ export default function EnrollDialog({
                     className="hidden"
                     readOnly
                   />
-
                   <Checkbox
                     id={day.id}
                     checked={selectedDays.includes(day.id)}
                     onCheckedChange={() => handleDayToggle(day.id)}
-                    className="border-slate-600 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    disabled={!activePlan} // Disable if no plan selected
+                    className="border-slate-600 data-[state=checked]:bg-primary"
                   />
                   <label
                     htmlFor={day.id}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-slate-300"
+                    className="text-sm cursor-pointer text-slate-300"
                   >
                     {day.label}
                   </label>
@@ -194,7 +193,10 @@ export default function EnrollDialog({
           <Button
             type="submit"
             className="w-full bg-primary text-black font-bold mt-4"
-            disabled={isPending || selectedDays.length !== requiredDays}
+            disabled={
+              isPending ||
+              (activePlan ? selectedDays.length !== requiredDays : true)
+            }
           >
             {isPending ? "Enrolling..." : "Confirm Enrollment"}
           </Button>
