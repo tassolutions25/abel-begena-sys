@@ -4,18 +4,29 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { DayOfWeek } from "@prisma/client";
 
 // --- 1. TEACHER SHIFT MANAGEMENT ---
+
 export async function createTeacherShift(prevState: any, formData: FormData) {
   const name = formData.get("name") as string;
   const startTime = formData.get("startTime") as string;
   const endTime = formData.get("endTime") as string;
 
+  // Get all checked checkboxes
+  const workDays = formData.getAll("workDays") as DayOfWeek[];
+
   if (!name || !startTime || !endTime)
-    return { message: "All fields required", success: false };
+    return { message: "Name and Time fields required", success: false };
+
+  if (workDays.length === 0)
+    return {
+      message: "Please select at least one working day",
+      success: false,
+    };
 
   await prisma.teacherShift.create({
-    data: { name, startTime, endTime },
+    data: { name, startTime, endTime, workDays },
   });
 
   revalidatePath("/dashboard/teachers/shifts");
@@ -84,11 +95,19 @@ export async function updateTeacherShift(prevState: any, formData: FormData) {
   const name = formData.get("name") as string;
   const startTime = formData.get("startTime") as string;
   const endTime = formData.get("endTime") as string;
+  const workDays = formData.getAll("workDays") as DayOfWeek[];
+
+  if (workDays.length === 0)
+    return {
+      message: "Please select at least one working day",
+      success: false,
+    };
 
   await prisma.teacherShift.update({
     where: { id },
-    data: { name, startTime, endTime },
+    data: { name, startTime, endTime, workDays },
   });
+
   revalidatePath("/dashboard/teachers/shifts");
   return { message: "Shift Updated", success: true };
 }
@@ -97,15 +116,12 @@ export async function updateTeacherShift(prevState: any, formData: FormData) {
 export async function teacherClockIn(
   userId: string,
   currentLat: number,
-  currentLng: number
+  currentLng: number,
 ) {
   const now = new Date();
   const todayUTC = new Date(
-    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
   );
-
-  //   const today = new Date();
-  //   today.setHours(0, 0, 0, 0);
 
   try {
     const teacher = await prisma.user.findUnique({
@@ -116,44 +132,61 @@ export async function teacherClockIn(
     if (!teacher || !teacher.branch)
       return { message: "Teacher not assigned to a branch.", success: false };
 
-    // 2. CHECK LOCATION (If branch has coordinates set)
+    // 1. GEO-FENCING LOGIC
     if (teacher.branch.latitude && teacher.branch.longitude) {
+      // Ensure frontend sent valid coords
+      if (!currentLat || !currentLng) {
+        return {
+          message: "Location data missing. Enable GPS.",
+          success: false,
+        };
+      }
+
       const distance = getDistanceFromLatLonInMeters(
         currentLat,
         currentLng,
         teacher.branch.latitude,
-        teacher.branch.longitude
+        teacher.branch.longitude,
       );
 
-      // ALLOWED RADIUS: 200 Meters (Adjust as needed)
-      if (distance > 200) {
+      console.log(
+        `Clock In Attempt: Teacher is ${Math.round(distance)}m away from branch.`,
+      );
+
+      if (distance > MAX_DISTANCE_METERS) {
         return {
-          message: `You are too far from ${
-            teacher.branch.name
-          }. You are ${Math.round(distance)}m away.`,
+          message: `You are too far! You are ${Math.round(distance)}m away. Move closer to ${teacher.branch.name}.`,
           success: false,
         };
       }
+    } else {
+      // Optional: If branch has NO coordinates set, do we allow it?
+      // Let's allow it but warn the admin in logs, or block it.
+      // For now, allow it to prevent system lockout during setup.
+      console.log("Branch has no coordinates. Skipping Geo-Check.");
     }
-    // Check if record exists
+
+    // 2. CHECK EXISTING RECORD
     const existing = await prisma.teacherAttendance.findUnique({
       where: { date_userId: { date: todayUTC, userId } },
     });
 
     if (existing) return { message: "Already clocked in.", success: false };
 
+    // 3. SUCCESS
     await prisma.teacherAttendance.create({
       data: {
-        date: todayUTC, // Save as UTC midnight
+        date: todayUTC,
         userId,
         status: "PRESENT",
-        checkIn: new Date(), // NOW
+        checkIn: new Date(),
       },
     });
 
     revalidatePath("/teacher-portal");
     return { message: "Clocked In Successfully!", success: true };
   } catch (e) {
+    console.error(e);
     return { message: "Error clocking in.", success: false };
   }
 }
@@ -161,7 +194,7 @@ export async function teacherClockIn(
 export async function teacherClockOut(userId: string) {
   const now = new Date();
   const todayUTC = new Date(
-    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
   );
 
   //   const today = new Date();
@@ -192,7 +225,7 @@ export async function teacherClockOut(userId: string) {
 
 export async function adminUpdateAttendance(
   prevState: any,
-  formData: FormData
+  formData: FormData,
 ) {
   const id = formData.get("id") as string;
   const checkInStr = formData.get("checkIn") as string; // "HH:MM"
@@ -249,7 +282,7 @@ export async function updateTeacher(prevState: any, formData: FormData) {
 // --- 5. ADMIN MANUALLY ADD ATTENDANCE ---
 export async function adminManualAttendance(
   prevState: any,
-  formData: FormData
+  formData: FormData,
 ) {
   const userId = formData.get("userId") as string;
   const dateStr = formData.get("date") as string;
@@ -299,9 +332,9 @@ function getDistanceFromLatLonInMeters(
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number
+  lon2: number,
 ) {
-  const R = 6371; // Radius of the earth in km
+  const R = 6371; // Radius of earth in km
   const dLat = deg2rad(lat2 - lat1);
   const dLon = deg2rad(lon2 - lon1);
   const a =
@@ -311,13 +344,16 @@ function getDistanceFromLatLonInMeters(
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = R * c; // Distance in km
-  return d * 1000; // Distance in meters
+  const d = R * c;
+  return d * 1000; // Meters
 }
 
 function deg2rad(deg: number) {
   return deg * (Math.PI / 180);
 }
+
+// MAX DISTANCE ALLOWED (e.g., 300 meters)
+const MAX_DISTANCE_METERS = 300;
 
 export async function resumeShift(formData: FormData) {
   const attendanceId = formData.get("attendanceId") as string;

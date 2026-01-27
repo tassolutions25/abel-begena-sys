@@ -1,9 +1,9 @@
 import Link from "next/link";
 import prisma from "@/lib/prisma";
-import { deleteUser } from "@/actions/delete-actions"; // We reuse the generic delete user action
+import { deleteUser } from "@/actions/delete-actions";
 import DeleteButton from "@/components/ui/delete-button";
 import { Button } from "@/components/ui/button";
-import { Plus, Clock, ClipboardList, UserCog } from "lucide-react";
+import { Plus, Clock, ClipboardList } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -12,13 +12,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { EditTeacherDialog } from "@/components/dialogs/TeacherDialogs";
+import ListFilter from "@/components/common/ListFilter"; // <--- Import Filter
 
 export const dynamic = "force-dynamic";
 
-export default async function TeachersListPage() {
-  // Fetch all teachers
+export default async function TeachersListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ branch?: string; shift?: string }>;
+}) {
+  const params = await searchParams;
+
+  // 1. Build Filter
+  const where: any = { role: "TEACHER" };
+
+  if (params.branch) where.branchId = params.branch;
+  if (params.shift) where.teacherShiftId = params.shift;
+
+  // 2. Fetch Data
   const teachers = await prisma.user.findMany({
-    where: { role: "TEACHER" },
+    where,
     orderBy: { createdAt: "desc" },
     include: {
       branch: true,
@@ -26,9 +40,12 @@ export default async function TeachersListPage() {
     },
   });
 
+  // 3. Dropdown Options
+  const branches = await prisma.branch.findMany();
+  const shifts = await prisma.teacherShift.findMany(); // Teacher Shifts
+
   return (
     <div className="space-y-6">
-      {/* HEADER & ACTIONS */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-white">
@@ -36,8 +53,6 @@ export default async function TeachersListPage() {
           </h2>
           <p className="text-slate-400">Manage staff and work schedules.</p>
         </div>
-
-        {/* Quick Links to other Teacher sections */}
         <div className="flex gap-2">
           <Link href="/dashboard/teachers/shifts">
             <Button
@@ -63,7 +78,13 @@ export default async function TeachersListPage() {
         </div>
       </div>
 
-      {/* TEACHERS LIST TABLE */}
+      {/* FILTER COMPONENT */}
+      <ListFilter
+        branches={branches}
+        shifts={shifts}
+        showCourseFilter={false} // Teachers don't have classes directly linked this way usually
+      />
+
       <div className="rounded-md border border-slate-800 bg-black">
         <Table>
           <TableHeader className="bg-slate-900">
@@ -96,9 +117,12 @@ export default async function TeachersListPage() {
                 </TableCell>
                 <TableCell>
                   {teacher.teacherShift ? (
-                    <span className="bg-slate-900 border border-slate-700 text-xs px-2 py-1 rounded text-white">
-                      {teacher.teacherShift.name} (
-                      {teacher.teacherShift.startTime})
+                    <span className="bg-slate-900 border border-slate-700 text-xs px-2 py-1 rounded text-white block w-fit">
+                      {teacher.teacherShift.name}
+                      <span className="text-slate-500 block text-[10px]">
+                        {teacher.teacherShift.startTime} -{" "}
+                        {teacher.teacherShift.endTime}
+                      </span>
                     </span>
                   ) : (
                     <span className="text-red-400 text-xs">No Shift</span>
@@ -109,8 +133,14 @@ export default async function TeachersListPage() {
                   <div className="text-xs text-slate-500">{teacher.phone}</div>
                 </TableCell>
                 <TableCell className="text-right">
-                  {/* Re-using the Delete User Action */}
-                  <DeleteButton id={teacher.id} deleteAction={deleteUser} />
+                  <div className="flex items-center justify-end gap-2">
+                    <EditTeacherDialog
+                      teacher={teacher}
+                      branches={branches}
+                      shifts={shifts}
+                    />
+                    <DeleteButton id={teacher.id} deleteAction={deleteUser} />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -120,7 +150,7 @@ export default async function TeachersListPage() {
                   colSpan={5}
                   className="h-24 text-center text-slate-500"
                 >
-                  No teachers found. Click "Register Teacher" to add one.
+                  No teachers found matching filters.
                 </TableCell>
               </TableRow>
             )}

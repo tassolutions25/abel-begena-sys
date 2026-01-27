@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Mail, Phone, MapPin } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, User } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import DeleteButton from "@/components/ui/delete-button";
@@ -25,7 +25,7 @@ export default async function StudentProfilePage({
         include: {
           course: true,
           shift: true,
-          pricingPlan: true, // <--- Get the Plan
+          pricingPlan: true,
         },
         orderBy: { course: { name: "asc" } },
       },
@@ -72,9 +72,26 @@ export default async function StudentProfilePage({
 
       {/* Header Section */}
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">{student.fullName}</h1>
-          <p className="text-slate-500">Student Profile</p>
+        <div className="flex items-center gap-4">
+          {/* AVATAR LOGIC */}
+          {student.avatar ? (
+            <img
+              src={student.avatar}
+              alt={student.fullName}
+              className="w-16 h-16 rounded-full object-cover border-2 border-primary"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+              <User className="h-8 w-8 text-primary" />
+            </div>
+          )}
+
+          <div>
+            <h1 className="text-3xl font-bold text-white">
+              {student.fullName}
+            </h1>
+            <p className="text-slate-500">Student Profile</p>
+          </div>
         </div>
         <span
           className={`px-3 py-1 rounded text-sm ${

@@ -11,8 +11,7 @@ import {
   EditAttendanceLogDialog,
   ManualAttendanceDialog,
 } from "@/components/dialogs/TeacherDialogs";
-import { Button } from "@/components/ui/button";
-import { Filter } from "lucide-react";
+import TeacherAttendanceFilter from "@/components/teacher/TeacherAttendanceFilter"; // <--- Import New Component
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +25,6 @@ export default async function TeacherAttendanceLog({
   const dateParam = params.date || new Date().toISOString().split("T")[0];
 
   // 2. Create a Date Range (Start to End of that day in UTC)
-  // This ensures we catch the record regardless of slight timezone differences
   const startOfDay = new Date(dateParam);
   startOfDay.setUTCHours(0, 0, 0, 0);
 
@@ -45,7 +43,7 @@ export default async function TeacherAttendanceLog({
     orderBy: { checkIn: "desc" },
   });
 
-  // 4. Fetch Teachers for Dropdown
+  // 4. Fetch Teachers for Dropdown (Manual Entry)
   const teachers = await prisma.user.findMany({
     where: { role: "TEACHER" },
     orderBy: { fullName: "asc" },
@@ -61,22 +59,9 @@ export default async function TeacherAttendanceLog({
           </p>
         </div>
 
-        <div className="flex gap-2">
-          {/* DATE FILTER FORM */}
-          <form className="flex gap-2 items-center">
-            <input
-              type="date"
-              name="date"
-              defaultValue={dateParam}
-              className="bg-slate-900 border border-slate-700 text-white px-3 py-2 rounded-md text-sm"
-            />
-            <Button
-              variant="outline"
-              className="border-slate-700 bg-black text-white hover:bg-slate-900"
-            >
-              <Filter className="w-4 h-4 mr-2" /> Filter
-            </Button>
-          </form>
+        <div className="flex gap-2 items-center">
+          {/* REPLACED FORM WITH AUTOMATIC FILTER */}
+          <TeacherAttendanceFilter />
 
           {/* MANUAL ENTRY BUTTON */}
           <ManualAttendanceDialog teachers={teachers} />

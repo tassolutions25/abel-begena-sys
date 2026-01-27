@@ -44,6 +44,19 @@ export default function NewStudentForm({
           {/* Hidden input to force role to STUDENT */}
           <input type="hidden" name="role" value="STUDENT" />
 
+          <div className="space-y-2">
+            <Label htmlFor="avatar" className="text-slate-300">
+              Profile Picture
+            </Label>
+            <Input
+              id="avatar"
+              name="avatar"
+              type="file"
+              accept="image/*"
+              className="bg-slate-900 border-slate-700 text-white file:text-primary file:font-bold"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-5">
             <div className="space-y-2">
               <Label htmlFor="fullName" className="text-slate-300">

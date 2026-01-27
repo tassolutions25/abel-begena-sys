@@ -91,6 +91,31 @@ export default function NewBranchPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800">
+              <div className="col-span-2 text-sm text-slate-400 font-medium">
+                GPS Coordinates (Optional)
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-400 text-xs">Latitude</Label>
+                <Input
+                  name="latitude"
+                  type="number"
+                  step="any"
+                  placeholder="e.g. 9.005"
+                  className="bg-slate-900 border-slate-700 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-400 text-xs">Longitude</Label>
+                <Input
+                  name="longitude"
+                  type="number"
+                  step="any"
+                  placeholder="e.g. 38.763"
+                  className="bg-slate-900 border-slate-700 text-white"
+                />
+              </div>
+            </div>
             <Button
               type="submit"
               className="w-full bg-primary text-black font-bold"

@@ -8,6 +8,8 @@ const BranchSchema = z.object({
   name: z.string().min(2, "Branch name is required"),
   location: z.string().min(2, "Location is required"),
   currency: z.enum(["ETB", "USD"]),
+  latitude: z.coerce.number().optional(),
+  longitude: z.coerce.number().optional(),
 });
 
 export async function createBranch(prevState: any, formData: FormData) {
@@ -16,14 +18,24 @@ export async function createBranch(prevState: any, formData: FormData) {
     const validated = BranchSchema.safeParse(rawData);
 
     if (!validated.success) {
-      return { message: "Validation Error", success: false };
+      return { message: "Validation Error: Check inputs", success: false };
     }
 
+    const { name, location, currency, latitude, longitude } = validated.data;
+
     await prisma.branch.create({
-      data: validated.data,
+      data: {
+        name,
+        location,
+        currency,
+        // Only save if they are valid numbers (not 0 or null unless intended)
+        latitude: latitude || null,
+        longitude: longitude || null,
+      },
     });
 
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/branches");
     return { message: "New Branch Created Successfully!", success: true };
   } catch (error) {
     return {

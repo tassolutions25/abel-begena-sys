@@ -2,7 +2,8 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { deleteUser } from "@/actions/delete-actions";
 import DeleteButton from "@/components/ui/delete-button";
-import StudentEditDialog from "@/components/dialogs/StudentEditDialog"; // <--- Import Dialog
+import StudentEditDialog from "@/components/dialogs/StudentEditDialog";
+import EnrollDialog from "@/components/dialogs/EnrollDialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import {
@@ -13,25 +14,46 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import EnrollDialog from "@/components/dialogs/EnrollDialog";
+import ListFilter from "@/components/common/ListFilter"; // <--- Import Filter
 
 export const dynamic = "force-dynamic";
 
-export default async function StudentsPage() {
-  // 1. Fetch Students
+export default async function StudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ branch?: string; shift?: string; course?: string }>;
+}) {
+  const params = await searchParams;
+
+  // 1. Build Filter Query
+  const where: any = { role: "STUDENT" };
+
+  if (params.branch) {
+    where.branchId = params.branch;
+  }
+
+  // Complex Filter: Shift & Course are inside 'enrollments' relation
+  if (params.shift || params.course) {
+    where.enrollments = {
+      some: {
+        active: true,
+        ...(params.shift && { shiftId: params.shift }),
+        ...(params.course && { courseId: params.course }),
+      },
+    };
+  }
+
+  // 2. Fetch Data
   const students = await prisma.user.findMany({
-    where: { role: "STUDENT" },
+    where,
     orderBy: { createdAt: "desc" },
     include: { branch: true },
   });
 
-  // 2. Fetch Branches (Needed for the Edit Dropdown)
-  const branches = await prisma.branch.findMany({
-    select: { id: true, name: true },
-  });
-
-  const courses = await prisma.course.findMany();
+  // 3. Fetch Dropdown Options
+  const branches = await prisma.branch.findMany();
   const shifts = await prisma.shift.findMany();
+  const courses = await prisma.course.findMany();
   const plans = await prisma.pricingPlan.findMany();
 
   return (
@@ -49,6 +71,14 @@ export default async function StudentsPage() {
           </Button>
         </Link>
       </div>
+
+      {/* FILTER COMPONENT */}
+      <ListFilter
+        branches={branches}
+        shifts={shifts}
+        courses={courses}
+        showCourseFilter={true}
+      />
 
       <div className="rounded-md border border-slate-800 bg-black">
         <Table>
@@ -85,11 +115,7 @@ export default async function StudentsPage() {
                 </TableCell>
                 <TableCell>
                   <span
-                    className={`px-2 py-1 rounded text-xs ${
-                      student.isActive
-                        ? "bg-green-900/30 text-green-400"
-                        : "bg-red-900/30 text-red-400"
-                    }`}
+                    className={`px-2 py-1 rounded text-xs ${student.isActive ? "bg-green-900/30 text-green-400" : "bg-red-900/30 text-red-400"}`}
                   >
                     {student.isActive ? "Active" : "Inactive"}
                   </span>
@@ -108,6 +134,16 @@ export default async function StudentsPage() {
                 </TableCell>
               </TableRow>
             ))}
+            {students.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={5}
+                  className="text-center h-24 text-slate-500"
+                >
+                  No students found matching filters.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>

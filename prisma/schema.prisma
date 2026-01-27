@@ -18,6 +18,7 @@ enum UserRole {
 model User {
   id        String   @id @default(uuid())
   fullName  String
+  avatar    String?
   email     String   @unique
   password  String
   phone     String?
@@ -59,6 +60,7 @@ model TeacherShift {
   name      String   
   startTime String   
   endTime   String   
+  workDays  DayOfWeek[]
   teachers  User[]
 }
 

@@ -61,6 +61,8 @@ export async function loginAction(prevState: any, formData: FormData) {
   // 4. Redirect (Must happen outside try/catch to work in Next.js)
   if (userRole === "TEACHER") {
     redirect("/teacher-portal");
+  } else if (userRole === "STUDENT") {
+    redirect("/student-portal"); // <--- THIS FIXES THE LOOP
   } else {
     redirect("/dashboard");
   }
