@@ -7,8 +7,7 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // This tells Next.js to keep Prisma out of the client-side bundle
-  // and handle its binary correctly during build
+  // This is required for Prisma in Next.js 15
   serverExternalPackages: ["@prisma/client"],
 };
 
