@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { writeFile } from "fs/promises";
 import path from "path";
+import { put } from "@vercel/blob";
 
 // 1. UPDATE SCHEMA: Make branchId optional
 const UserSchema = z.object({
