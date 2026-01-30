@@ -18,6 +18,8 @@ const formatEAT = (date: Date) => {
   }).format(date);
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function TeacherPortal() {
   // 1. GET SESSION (Who is logged in?)
   const session = await getSession();
@@ -44,7 +46,7 @@ export default async function TeacherPortal() {
 
   // Use UTC logic if you kept it, otherwise standard date
   const todayUTC = new Date(
-    Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
+    Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()),
   );
 
   const attendance = await prisma.teacherAttendance.findUnique({
