@@ -59,7 +59,7 @@ export function Sidebar() {
                 "group flex items-center rounded-md px-3 py-3 text-sm font-medium transition-all duration-200",
                 isActive
                   ? "bg-primary text-black shadow-[0_0_15px_rgba(245,158,11,0.4)]"
-                  : "text-slate-400 hover:bg-slate-900 hover:text-white"
+                  : "text-slate-400 hover:bg-slate-900 hover:text-white",
               )}
             >
               <item.icon
@@ -67,7 +67,7 @@ export function Sidebar() {
                   "mr-3 h-5 w-5 flex-shrink-0",
                   isActive
                     ? "text-black"
-                    : "text-slate-400 group-hover:text-primary"
+                    : "text-slate-400 group-hover:text-primary",
                 )}
               />
               {item.name}
