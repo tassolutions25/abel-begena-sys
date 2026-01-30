@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 type BranchOption = {
   id: string;
@@ -27,11 +28,13 @@ export default function NewStudentForm({
 }) {
   const [state, action, isPending] = useActionState(createUser, null);
   const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (state?.success) {
       toast.success(state.message);
       formRef.current?.reset();
+      router.push("/dashboard/students");
     } else if (state?.message) {
       toast.error(state.message);
     }

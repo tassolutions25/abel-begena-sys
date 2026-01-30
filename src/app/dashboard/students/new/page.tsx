@@ -1,6 +1,8 @@
 import prisma from "@/lib/prisma";
 import NewStudentForm from "@/components/forms/NewStudentForm"; // We assume this exists from previous steps
-import { UserPlus } from "lucide-react";
+import { UserPlus, ArrowLeft } from "lucide-react";
+import Link from "next/link"; // Import Link
+import { Button } from "@/components/ui/button";
 
 export default async function NewStudentPage() {
   // Fetch branches to show in dropdown
@@ -11,6 +13,16 @@ export default async function NewStudentPage() {
   return (
     <div className="flex flex-col items-center justify-center pt-10">
       <div className="w-full max-w-2xl">
+        <div className="mb-4">
+          <Link href="/dashboard/students">
+            <Button
+              variant="ghost"
+              className="text-slate-400 pl-0 hover:text-white hover:bg-transparent"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
+            </Button>
+          </Link>
+        </div>
         <div className="mb-6 flex items-center gap-3">
           <div className="p-3 bg-primary/10 rounded-full">
             <UserPlus className="h-8 w-8 text-primary" />

@@ -20,16 +20,20 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { toast } from "sonner";
-import { School } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, School } from "lucide-react";
 
 export default function NewBranchPage() {
   const [state, action, isPending] = useActionState(createBranch, null);
   const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (state?.success) {
       toast.success(state.message);
       formRef.current?.reset();
+      router.push("/dashboard/branches");
     } else if (state?.message) {
       toast.error(state.message);
     }
@@ -37,6 +41,17 @@ export default function NewBranchPage() {
 
   return (
     <div className="flex flex-col items-center justify-center pt-10">
+      <div className="w-full max-w-lg mb-4">
+        {/* NEW: Back Button */}
+        <Link href="/dashboard/branches">
+          <Button
+            variant="ghost"
+            className="text-slate-400 pl-0 hover:text-white hover:bg-transparent"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
+          </Button>
+        </Link>
+      </div>
       <Card className="w-full max-w-lg border border-slate-800 bg-black shadow-2xl">
         <CardHeader className="border-b border-slate-800 pb-6">
           <div className="flex items-center gap-3">

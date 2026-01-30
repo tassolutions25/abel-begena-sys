@@ -24,20 +24,12 @@ export async function createUser(prevState: any, formData: FormData) {
     const file = formData.get("avatar") as File;
     let avatarPath = null;
 
-    // 2. Handle File Upload (If file exists and has size)
     if (file && file.size > 0) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const filename = `${Date.now()}_${file.name.replace(/\s/g, "_")}`;
-
-      // Save to "public/uploads"
-      // Ensure this folder exists in your project structure!
-      const uploadDir = path.join(process.cwd(), "public/uploads");
-
-      // Write file
-      await writeFile(path.join(uploadDir, filename), buffer);
-
-      // Save web path
-      avatarPath = `/uploads/${filename}`;
+      // Upload to Vercel Blob (Free Cloud Storage)
+      const blob = await put(file.name, file, {
+        access: "public",
+      });
+      avatarPath = blob.url; // This gives a real internet URL
     }
 
     const rawData = Object.fromEntries(formData.entries());
@@ -51,9 +43,8 @@ export async function createUser(prevState: any, formData: FormData) {
     });
 
     if (!validatedFields.success) {
-      // Return specific validation errors
       return {
-        message: "Validation Error: Check all fields.",
+        message: "Validation Error",
         errors: validatedFields.error.flatten().fieldErrors,
       };
     }
@@ -98,7 +89,6 @@ export async function createUser(prevState: any, formData: FormData) {
         email,
         password: hashedPassword,
         role: role as any,
-        // If branchId is empty string or undefined, save as null
         branchId: branchId || null,
         phone: phone || null,
         avatar: avatarPath,

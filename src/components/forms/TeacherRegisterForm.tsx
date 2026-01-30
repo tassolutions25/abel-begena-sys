@@ -36,14 +36,6 @@ export default function TeacherRegisterForm({
 
   return (
     <div>
-      {/* BACK BUTTON */}
-      <Link
-        href="/dashboard/teachers"
-        className="inline-flex items-center text-slate-400 hover:text-white mb-4 transition-colors"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Teachers List
-      </Link>
-
       <Card className="bg-black border-slate-800">
         <CardContent className="pt-6">
           <form action={action} className="space-y-4">

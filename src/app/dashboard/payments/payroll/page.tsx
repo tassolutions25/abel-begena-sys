@@ -9,7 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CheckCircle, Play, AlertCircle, RefreshCw } from "lucide-react"; // <--- Import RefreshCw
+import {
+  CheckCircle,
+  Play,
+  AlertCircle,
+  RefreshCw,
+  ArrowLeft,
+} from "lucide-react";
+import Link from "next/link";
 import BulkPayButton from "@/components/payments/BulkPayButton";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +39,14 @@ export default async function PayrollPage() {
 
   return (
     <div className="space-y-6">
+      <Link href="/dashboard/payments">
+        <Button
+          variant="ghost"
+          className="text-slate-400 pl-0 hover:text-white hover:bg-transparent mb-2"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Financial Dashboard
+        </Button>
+      </Link>
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-white">Teacher Payroll</h2>

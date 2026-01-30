@@ -124,56 +124,66 @@ export async function teacherClockIn(
   );
 
   try {
+    // 1. Fetch Teacher & Branch
     const teacher = await prisma.user.findUnique({
       where: { id: userId },
       include: { branch: true },
     });
 
-    if (!teacher || !teacher.branch)
-      return { message: "Teacher not assigned to a branch.", success: false };
-
-    // 1. GEO-FENCING LOGIC
-    if (teacher.branch.latitude && teacher.branch.longitude) {
-      // Ensure frontend sent valid coords
-      if (!currentLat || !currentLng) {
-        return {
-          message: "Location data missing. Enable GPS.",
-          success: false,
-        };
-      }
-
-      const distance = getDistanceFromLatLonInMeters(
-        currentLat,
-        currentLng,
-        teacher.branch.latitude,
-        teacher.branch.longitude,
-      );
-
-      console.log(
-        `Clock In Attempt: Teacher is ${Math.round(distance)}m away from branch.`,
-      );
-
-      if (distance > MAX_DISTANCE_METERS) {
-        return {
-          message: `You are too far! You are ${Math.round(distance)}m away. Move closer to ${teacher.branch.name}.`,
-          success: false,
-        };
-      }
-    } else {
-      // Optional: If branch has NO coordinates set, do we allow it?
-      // Let's allow it but warn the admin in logs, or block it.
-      // For now, allow it to prevent system lockout during setup.
-      console.log("Branch has no coordinates. Skipping Geo-Check.");
+    if (!teacher || !teacher.branch) {
+      return {
+        message: "Error: You are not assigned to a branch.",
+        success: false,
+      };
     }
 
-    // 2. CHECK EXISTING RECORD
+    // 2. CHECK IF BRANCH HAS COORDINATES (Strict Mode)
+    if (!teacher.branch.latitude || !teacher.branch.longitude) {
+      return {
+        message:
+          "Clock-In Failed: Branch location is not set in the system. Contact Admin.",
+        success: false,
+      };
+    }
+
+    // 3. CHECK CLIENT COORDINATES
+    if (!currentLat || !currentLng) {
+      return {
+        message: "Error: Could not retrieve your location.",
+        success: false,
+      };
+    }
+
+    // 4. CALCULATE DISTANCE
+    const distance = getDistanceFromLatLonInMeters(
+      currentLat,
+      currentLng,
+      teacher.branch.latitude,
+      teacher.branch.longitude,
+    );
+
+    console.log(
+      `CLOCK-IN ATTEMPT: User=${teacher.fullName}, Dist=${Math.round(distance)}m, Allowed=${MAX_DISTANCE_METERS}m`,
+    );
+
+    // 5. ENFORCE DISTANCE
+    if (distance > MAX_DISTANCE_METERS) {
+      return {
+        message: `You are too far away! (${Math.round(distance)}m). You must be within ${MAX_DISTANCE_METERS}m of ${teacher.branch.name}.`,
+        success: false,
+      };
+    }
+
+    // 6. CHECK FOR EXISTING RECORD
     const existing = await prisma.teacherAttendance.findUnique({
       where: { date_userId: { date: todayUTC, userId } },
     });
 
-    if (existing) return { message: "Already clocked in.", success: false };
+    if (existing) {
+      return { message: "You have already clocked in today.", success: false };
+    }
 
-    // 3. SUCCESS
+    // 7. SUCCESS: CREATE RECORD
     await prisma.teacherAttendance.create({
       data: {
         date: todayUTC,
@@ -184,10 +194,13 @@ export async function teacherClockIn(
     });
 
     revalidatePath("/teacher-portal");
-    return { message: "Clocked In Successfully!", success: true };
+    return {
+      message: `Success! Clocked in at ${teacher.branch.name}.`,
+      success: true,
+    };
   } catch (e) {
     console.error(e);
-    return { message: "Error clocking in.", success: false };
+    return { message: "System Error during clock-in.", success: false };
   }
 }
 
@@ -197,11 +210,7 @@ export async function teacherClockOut(userId: string) {
     Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
   );
 
-  //   const today = new Date();
-  //   today.setHours(0, 0, 0, 0);
-
   try {
-    // Find today's record
     const record = await prisma.teacherAttendance.findUnique({
       where: { date_userId: { date: todayUTC, userId } },
     });
@@ -213,7 +222,7 @@ export async function teacherClockOut(userId: string) {
 
     await prisma.teacherAttendance.update({
       where: { id: record.id },
-      data: { checkOut: new Date() }, // NOW
+      data: { checkOut: new Date() },
     });
 
     revalidatePath("/teacher-portal");
@@ -334,7 +343,7 @@ function getDistanceFromLatLonInMeters(
   lat2: number,
   lon2: number,
 ) {
-  const R = 6371; // Radius of earth in km
+  const R = 6371; // Radius of the earth in km
   const dLat = deg2rad(lat2 - lat1);
   const dLon = deg2rad(lon2 - lon1);
   const a =
@@ -344,16 +353,16 @@ function getDistanceFromLatLonInMeters(
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = R * c;
-  return d * 1000; // Meters
+  const d = R * c; // Distance in km
+  return d * 1000; // Return in meters
 }
 
 function deg2rad(deg: number) {
   return deg * (Math.PI / 180);
 }
 
-// MAX DISTANCE ALLOWED (e.g., 300 meters)
-const MAX_DISTANCE_METERS = 300;
+// STRICT DISTANCE LIMIT (e.g., 50 Meters)
+const MAX_DISTANCE_METERS = 50;
 
 export async function resumeShift(formData: FormData) {
   const attendanceId = formData.get("attendanceId") as string;

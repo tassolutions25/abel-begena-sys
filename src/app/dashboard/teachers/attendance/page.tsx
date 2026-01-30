@@ -11,7 +11,10 @@ import {
   EditAttendanceLogDialog,
   ManualAttendanceDialog,
 } from "@/components/dialogs/TeacherDialogs";
-import TeacherAttendanceFilter from "@/components/teacher/TeacherAttendanceFilter"; // <--- Import New Component
+import TeacherAttendanceFilter from "@/components/teacher/TeacherAttendanceFilter";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +54,16 @@ export default async function TeacherAttendanceLog({
 
   return (
     <div className="space-y-6">
+      <div>
+        <Link href="/dashboard/teachers">
+          <Button
+            variant="ghost"
+            className="text-slate-400 pl-0 hover:text-white hover:bg-transparent"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Teachers List
+          </Button>
+        </Link>
+      </div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold text-white">Teacher Attendance</h2>

@@ -4,6 +4,9 @@ import AddTeacherShiftForm from "@/components/forms/AddTeacherShiftForm";
 import { EditTeacherShiftDialog } from "@/components/dialogs/TeacherDialogs";
 import DeleteButton from "@/components/ui/delete-button";
 import { deleteTeacherShift } from "@/actions/teacher-actions";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 export default async function TeacherShiftsPage() {
   const shifts = await prisma.teacherShift.findMany({
@@ -12,6 +15,16 @@ export default async function TeacherShiftsPage() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <Link href="/dashboard/teachers">
+          <Button
+            variant="ghost"
+            className="text-slate-400 pl-0 hover:text-white hover:bg-transparent"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Teachers List
+          </Button>
+        </Link>
+      </div>
       <h2 className="text-3xl font-bold text-white">Teacher Work Shifts</h2>
 
       <div className="grid md:grid-cols-2 gap-8">

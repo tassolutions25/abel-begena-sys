@@ -6,6 +6,9 @@ import TeacherFinancialForm from "@/components/forms/TeacherFinancialForm";
 import AddBankForm from "@/components/forms/AddBankForm"; // <--- Import
 import DeleteButton from "@/components/ui/delete-button";
 import { deleteBank } from "@/actions/bank-actions";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default async function PaymentSettings() {
   const plans = await prisma.pricingPlan.findMany({
@@ -25,6 +28,14 @@ export default async function PaymentSettings() {
 
   return (
     <div className="space-y-8">
+      <Link href="/dashboard/payments">
+        <Button
+          variant="ghost"
+          className="text-slate-400 pl-0 hover:text-white hover:bg-transparent"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Financial Dashboard
+        </Button>
+      </Link>
       <h2 className="text-3xl font-bold text-white">Financial Settings</h2>
 
       <div className="grid md:grid-cols-2 gap-8">

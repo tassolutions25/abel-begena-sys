@@ -24,7 +24,6 @@ export async function initiateStudentPayment(
 
     // 2. Generate Reference
     const txRef = `TX-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
     // 3. Create Internal Record
     await prisma.payment.create({
@@ -44,6 +43,15 @@ export async function initiateStudentPayment(
     const cleanDescription = reason.replace(/[^a-zA-Z0-9 ._-]/g, "");
     // Trim to 15 chars as per previous logic, ensuring it's not empty
     const finalDescription = cleanDescription.substring(0, 15) || "Tuition Fee";
+
+    // const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    // If VERCEL_URL exists, use it (https://...). Otherwise use localhost.
+    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+    const host =
+      process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+      process.env.VERCEL_URL ||
+      "localhost:3000";
+    const baseUrl = `${protocol}://${host}`;
 
     const payload = {
       amount: amount,

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { teacherClockIn, teacherClockOut } from "@/actions/teacher-actions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Fingerprint, LogOut, MapPin } from "lucide-react";
+import { LogOut, MapPin, Loader2 } from "lucide-react";
 
 export default function TeacherActionButtons({
   userId,
@@ -13,11 +13,11 @@ export default function TeacherActionButtons({
   status: "NONE" | "WORKING" | "DONE";
 }) {
   const [loading, setLoading] = useState(false);
-  const [locationStatus, setLocationStatus] = useState("");
+  const [statusMsg, setStatusMsg] = useState("");
 
   const handleClockIn = async () => {
     setLoading(true);
-    setLocationStatus("Getting Location...");
+    setStatusMsg("Locating...");
 
     if (!navigator.geolocation) {
       toast.error("Geolocation is not supported by your browser");
@@ -27,44 +27,51 @@ export default function TeacherActionButtons({
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        setLocationStatus("Verifying...");
+        setStatusMsg("Verifying location...");
         const { latitude, longitude } = position.coords;
 
-        // Pass coords to server
+        // Server Action call
         const res = await teacherClockIn(userId, latitude, longitude);
 
         if (res.success) {
           toast.success(res.message);
         } else {
-          toast.error(res.message);
+          // THIS DISPLAYS THE "YOU ARE TOO FAR" MESSAGE
+          toast.error(res.message, {
+            duration: 5000, // Show for 5 seconds
+            style: { border: "1px solid red", color: "red" },
+          });
         }
         setLoading(false);
-        setLocationStatus("");
+        setStatusMsg("");
       },
       (error) => {
-        toast.error("Please allow Location Access to clock in.");
+        console.error(error);
+        toast.error("Location Access Denied. Please enable GPS.");
         setLoading(false);
-        setLocationStatus("");
+        setStatusMsg("");
       },
-      { enableHighAccuracy: true } // Request best GPS signal
+      {
+        enableHighAccuracy: true, // Request precise GPS
+        timeout: 10000,
+        maximumAge: 0,
+      },
     );
   };
 
-  // Clock Out doesn't strictly need GPS, but you can add it if you want
   const handleClockOut = async () => {
     setLoading(true);
     const res = await teacherClockOut(userId);
     if (res.success) toast.success(res.message);
-    else {
-      toast.error(res.message);
-      setLoading(false);
-    }
+    else toast.error(res.message);
+    setLoading(false);
   };
 
   if (status === "DONE") {
     return (
       <div className="w-full p-6 bg-slate-900 rounded-xl border border-slate-700 text-center">
         <h3 className="text-green-500 font-bold text-xl">Shift Complete</h3>
+        <p className="text-slate-500 text-sm mt-1">See you next time!</p>
       </div>
     );
   }
@@ -77,7 +84,7 @@ export default function TeacherActionButtons({
         className="w-full h-16 text-lg bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg"
       >
         {loading ? (
-          "Processing..."
+          <Loader2 className="animate-spin" />
         ) : (
           <>
             <LogOut className="mr-2" /> Clock Out
@@ -88,14 +95,16 @@ export default function TeacherActionButtons({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full">
       <Button
         onClick={handleClockIn}
         disabled={loading}
         className="w-full h-16 text-lg bg-primary hover:bg-amber-600 text-black font-bold rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all active:scale-95"
       >
         {loading ? (
-          locationStatus || "Processing..."
+          <span className="flex items-center gap-2">
+            <Loader2 className="animate-spin h-5 w-5" /> {statusMsg}
+          </span>
         ) : (
           <div className="flex items-center gap-2">
             <MapPin className="h-6 w-6" />
@@ -104,7 +113,7 @@ export default function TeacherActionButtons({
         )}
       </Button>
       <p className="text-xs text-center text-slate-500">
-        * Location access required to verify you are at the branch.
+        * GPS Location is required.
       </p>
     </div>
   );
