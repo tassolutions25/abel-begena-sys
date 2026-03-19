@@ -132,6 +132,11 @@ model CoursePrice {
   @@unique([courseId, pricingPlanId]) // Ensure only one price exists for this combo
 }
 
+enum PaymentMethod {
+  CHAPA
+  MANUAL
+}
+
 model Payment {
   id          String   @id @default(uuid())
   studentId   String
@@ -144,6 +149,9 @@ model Payment {
   month       Int      // e.g. 1 for January
   year        Int      // e.g. 2026
   reason      String   // "Tuition Fee - Begena"
+
+  method      PaymentMethod @default(CHAPA)
+  receiptUrl  String?
 
   // Chapa Fields
   txRef       String   @unique // Our internal Reference

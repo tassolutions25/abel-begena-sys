@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   BookOpen,
   Clock,
+  CheckSquare,
 } from "lucide-react";
 import { logoutAction } from "@/actions/auth-actions";
 
@@ -25,6 +26,11 @@ const menuItems = [
   { name: "Academics", icon: BookOpen, href: "/dashboard/academics" },
   { name: "Attendance", icon: CalendarCheck, href: "/dashboard/attendance" },
   { name: "Payments", icon: Banknote, href: "/dashboard/payments" },
+  {
+    name: "Payment Approvals",
+    icon: CheckSquare,
+    href: "/dashboard/payments/approvals",
+  },
   { name: "Admins", icon: ShieldCheck, href: "/dashboard/admins" },
 ];
 

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
 import { logoutAction } from "@/actions/auth-actions";
 import InitiatePaymentBtn from "@/components/payments/InitiatePayment";
+import ManualPaymentForm from "@/components/payments/ManualPaymentForm";
+import PaymentMonthTracker from "@/components/payments/PaymentMonthTracker";
 
 // Force dynamic to ensure latest payment status
 export const dynamic = "force-dynamic";
@@ -82,6 +84,8 @@ export default async function StudentPortal() {
       </div>
 
       <div className="w-full max-w-2xl space-y-6">
+        <PaymentMonthTracker payments={student.paymentsMade} />
+
         {/* SECTION 1: TUITION FEES (PAYMENT) */}
         <Card className="bg-slate-900 border-slate-800 border-t-4 border-t-primary">
           <CardHeader>
@@ -120,7 +124,34 @@ export default async function StudentPortal() {
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-800">
+                  <div className="pt-2 border-t border-slate-800 flex flex-col gap-4">
+                    {/* OPTION 1: CHAPA (Instant) */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-500 italic">
+                        Pay instantly via Chapa:
+                      </span>
+                      <InitiatePaymentBtn
+                        studentId={student.id}
+                        amount={enrollment.currentPrice}
+                        reason={`Tuition: ${enrollment.course.name}`}
+                      />
+                    </div>
+
+                    {/* OPTION 2: MANUAL (Upload Slip) */}
+                    <div className="border-t border-slate-800 pt-4">
+                      <span className="text-xs text-slate-500 italic block mb-2">
+                        Or upload bank transfer receipt:
+                      </span>
+                      <ManualPaymentForm
+                        studentId={student.id}
+                        planName={enrollment.course.name}
+                        monthlyPrice={enrollment.currentPrice}
+                        existingPayments={student.paymentsMade}
+                      />
+                    </div>
+                  </div>
+
+                  {/* <div className="pt-2 border-t border-slate-800">
                     {enrollment.currentPrice > 0 ? (
                       <InitiatePaymentBtn
                         studentId={student.id}
@@ -132,7 +163,7 @@ export default async function StudentPortal() {
                         Contact admin to set price.
                       </p>
                     )}
-                  </div>
+                  </div> */}
                 </div>
               ))
             )}
